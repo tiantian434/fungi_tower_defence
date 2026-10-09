@@ -1,0 +1,8 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/remains_spawner.gd" id="1_spawner"]
+[ext_resource type="PackedScene" path="res://scenes/recycling/enemy_remains.tscn" id="2_remains"]
+
+[node name="RemainsSpawner" type="Node"]
+script = ExtResource("1_spawner")
+remains_scene = ExtResource("2_remains")

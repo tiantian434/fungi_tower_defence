@@ -1,0 +1,15 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/supply_system.gd" id="1_supply"]
+[ext_resource type="PackedScene" path="res://scenes/colony/nutrient_packet.tscn" id="2_packet"]
+
+[node name="SupplySystem" type="Node"]
+script = ExtResource("1_supply")
+packet_scene = ExtResource("2_packet")
+
+[node name="DispatchTimer" type="Timer" parent="."]
+wait_time = 0.35
+autostart = true
+process_callback = 0
+
+[connection signal="timeout" from="DispatchTimer" to="." method="_on_dispatch_timer_timeout"]

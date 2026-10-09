@@ -1,0 +1,19 @@
+# Godot 4+ specific ignores
+.godot/
+/android/
+
+# Local export output.
+/build/
+/dist/
+/exports/
+
+# Local environment files and temporary output.
+.env
+.env.*
+!.env.example
+*.log
+*.tmp
+.DS_Store
+Thumbs.db
+desktop.ini
+Desktop.ini

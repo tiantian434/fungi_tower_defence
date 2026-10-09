@@ -1,0 +1,15 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/recycling_system.gd" id="1_system"]
+[ext_resource type="PackedScene" path="res://scenes/recycling/remains_packet.tscn" id="2_packet"]
+
+[node name="RecyclingSystem" type="Node"]
+script = ExtResource("1_system")
+packet_scene = ExtResource("2_packet")
+
+[node name="DispatchTimer" type="Timer" parent="."]
+wait_time = 0.6
+autostart = true
+process_callback = 0
+
+[connection signal="timeout" from="DispatchTimer" to="." method="_on_dispatch_timer_timeout"]

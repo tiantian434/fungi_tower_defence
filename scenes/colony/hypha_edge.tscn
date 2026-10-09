@@ -1,0 +1,14 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/hypha_edge.gd" id="1_edge"]
+
+[node name="HyphaEdge" type="Node2D"]
+z_index = -1
+script = ExtResource("1_edge")
+
+[node name="Vein" type="Line2D" parent="."]
+width = 6.0
+default_color = Color(0.44313726, 0.60784316, 0.4745098, 1)
+begin_cap_mode = 2
+end_cap_mode = 2
+antialiased = true

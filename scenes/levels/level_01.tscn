@@ -1,0 +1,124 @@
+[gd_scene format=3 uid="uid://dgvykduc5jxxa"]
+
+[ext_resource type="Script" uid="uid://c7o6oh2tc16qn" path="res://scripts/level_01.gd" id="1_i2aat"]
+[ext_resource type="PackedScene" uid="uid://bpmj7to36nssq" path="res://scenes/colony/mother_core.tscn" id="1_m802k"]
+[ext_resource type="PackedScene" uid="uid://cbqbiefdloo2k" path="res://scenes/colony/hypha_node.tscn" id="3_node"]
+[ext_resource type="PackedScene" path="res://scenes/colony/hypha_edge.tscn" id="4_edge"]
+
+[ext_resource type="PackedScene" path="res://scenes/colony/attack_organ.tscn" id="5_organ"]
+[ext_resource type="PackedScene" path="res://scenes/systems/supply_system.tscn" id="6_supply"]
+[ext_resource type="PackedScene" path="res://scenes/ui/colony_hud.tscn" id="7_hud"]
+[ext_resource type="PackedScene" path="res://scenes/combat/spore_weapon.tscn" id="8_weapon"]
+[ext_resource type="PackedScene" path="res://scenes/systems/enemy_spawner.tscn" id="9_spawner"]
+[ext_resource type="PackedScene" path="res://scenes/colony/recovery_organ.tscn" id="10_recovery"]
+[ext_resource type="PackedScene" path="res://scenes/colony/digestive_organ.tscn" id="11_digestive"]
+[ext_resource type="PackedScene" path="res://scenes/systems/remains_spawner.tscn" id="12_remains"]
+[ext_resource type="PackedScene" path="res://scenes/systems/recycling_system.tscn" id="13_recycling"]
+
+[node name="Level01" type="Node2D" unique_id=1081824810]
+script = ExtResource("1_i2aat")
+
+[node name="World" type="Node2D" parent="." unique_id=2064413596]
+y_sort_enabled = true
+
+[node name="Ground" type="ColorRect" parent="World" unique_id=531554609]
+z_index = -10
+offset_right = 1200.0
+offset_bottom = 800.0
+mouse_filter = 2
+color = Color(0.1254902, 0.16078432, 0.13725491, 1)
+
+[node name="Colony" type="Node2D" parent="World" unique_id=1375296272]
+y_sort_enabled = true
+
+[node name="MotherCore" parent="World/Colony" unique_id=1235887925 instance=ExtResource("1_m802k")]
+position = Vector2(600, 560)
+
+[node name="Nodes" type="Node2D" parent="World/Colony" unique_id=1083336229]
+y_sort_enabled = true
+
+[node name="HyphaNode" parent="World/Colony/Nodes" unique_id=1801727760 instance=ExtResource("3_node")]
+position = Vector2(600, 248)
+display_name = "前线菌结"
+
+[node name="AttackOrgan" parent="World/Colony/Nodes/HyphaNode" instance=ExtResource("5_organ")]
+
+[node name="RecoveryOrgan" parent="World/Colony/Nodes/HyphaNode" instance=ExtResource("10_recovery")]
+
+[node name="SporeWeapon" parent="World/Colony/Nodes/HyphaNode" node_paths=PackedStringArray("inventory_owner", "enemy_container", "projectile_container") instance=ExtResource("8_weapon")]
+position = Vector2(0, -28)
+inventory_owner = NodePath("../AttackOrgan")
+enemy_container = NodePath("../../../../Enemies")
+projectile_container = NodePath("../../../../Projectiles")
+
+[node name="RearNode" parent="World/Colony/Nodes" instance=ExtResource("3_node")]
+position = Vector2(750, 590)
+display_name = "消化菌结"
+
+[node name="DigestiveOrgan" parent="World/Colony/Nodes/RearNode" node_paths=PackedStringArray("mother_core", "core_edge") instance=ExtResource("11_digestive")]
+mother_core = NodePath("../../../MotherCore")
+core_edge = NodePath("../../../Connections/DigestionEdge")
+
+[node name="Connections" type="Node2D" parent="World/Colony" unique_id=517366440]
+
+[node name="HyphaEdge" parent="World/Colony/Connections" unique_id=1252488593 node_paths=PackedStringArray("start_node", "end_node") instance=ExtResource("4_edge")]
+position = Vector2(9, -7)
+start_node = NodePath("../../MotherCore")
+end_node = NodePath("../../Nodes/HyphaNode")
+
+[node name="RecoveryEdge" parent="World/Colony/Connections" node_paths=PackedStringArray("start_node", "end_node") instance=ExtResource("4_edge")]
+start_node = NodePath("../../Nodes/HyphaNode")
+end_node = NodePath("../../Nodes/RearNode")
+
+[node name="DigestionEdge" parent="World/Colony/Connections" node_paths=PackedStringArray("start_node", "end_node") instance=ExtResource("4_edge")]
+start_node = NodePath("../../MotherCore")
+end_node = NodePath("../../Nodes/RearNode")
+
+[node name="Packets" type="Node2D" parent="World" unique_id=811480019]
+y_sort_enabled = true
+
+[node name="Enemies" type="Node2D" parent="World"]
+y_sort_enabled = true
+
+[node name="Projectiles" type="Node2D" parent="World"]
+y_sort_enabled = true
+
+[node name="Remains" type="Node2D" parent="World"]
+y_sort_enabled = true
+
+[node name="RecoveryPackets" type="Node2D" parent="World"]
+y_sort_enabled = true
+
+[node name="SpawnPoints" type="Node2D" parent="World"]
+
+[node name="East" type="Marker2D" parent="World/SpawnPoints"]
+position = Vector2(940, 260)
+
+[node name="West" type="Marker2D" parent="World/SpawnPoints"]
+position = Vector2(260, 300)
+
+[node name="Systems" type="Node" parent="."]
+
+[node name="SupplySystem" parent="Systems" node_paths=PackedStringArray("mother_core", "target_organ", "supply_edge", "packet_container") instance=ExtResource("6_supply")]
+mother_core = NodePath("../../World/Colony/MotherCore")
+target_organ = NodePath("../../World/Colony/Nodes/HyphaNode/AttackOrgan")
+supply_edge = NodePath("../../World/Colony/Connections/HyphaEdge")
+packet_container = NodePath("../../World/Packets")
+
+[node name="EnemySpawner" parent="Systems" node_paths=PackedStringArray("mother_core", "enemy_container", "spawn_points") instance=ExtResource("9_spawner")]
+mother_core = NodePath("../../World/Colony/MotherCore")
+enemy_container = NodePath("../../World/Enemies")
+spawn_points = NodePath("../../World/SpawnPoints")
+
+[node name="RemainsSpawner" parent="Systems" node_paths=PackedStringArray("enemy_container", "remains_container") instance=ExtResource("12_remains")]
+enemy_container = NodePath("../../World/Enemies")
+remains_container = NodePath("../../World/Remains")
+
+[node name="RecyclingSystem" parent="Systems" node_paths=PackedStringArray("collector", "digestive_organ", "return_edge", "remains_container", "packet_container") instance=ExtResource("13_recycling")]
+collector = NodePath("../../World/Colony/Nodes/HyphaNode/RecoveryOrgan")
+digestive_organ = NodePath("../../World/Colony/Nodes/RearNode/DigestiveOrgan")
+return_edge = NodePath("../../World/Colony/Connections/RecoveryEdge")
+remains_container = NodePath("../../World/Remains")
+packet_container = NodePath("../../World/RecoveryPackets")
+
+[node name="HUD" parent="." instance=ExtResource("7_hud")]

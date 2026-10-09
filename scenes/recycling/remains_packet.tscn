@@ -1,0 +1,28 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/remains_packet.gd" id="1_packet"]
+
+[node name="RemainsPacket" type="Node2D"]
+z_index = -1
+script = ExtResource("1_packet")
+
+[node name="Trail" type="Line2D" parent="."]
+points = PackedVector2Array(-16, 0, 0, 0)
+width = 4.0
+default_color = Color(0.73, 0.51, 0.75, 0.3)
+begin_cap_mode = 2
+end_cap_mode = 2
+antialiased = true
+
+[node name="Shell" type="Polygon2D" parent="."]
+color = Color(0.77, 0.59, 0.75, 1)
+polygon = PackedVector2Array(-9, -3, -5, -7, 5, -7, 9, -3, 9, 3, 5, 7, -5, 7, -9, 3)
+
+[node name="Payload" type="Polygon2D" parent="."]
+color = Color(0.35, 0.24, 0.27, 1)
+polygon = PackedVector2Array(-5, -3, 5, -3, 5, 3, -5, 3)
+
+[node name="Highlight" type="Line2D" parent="."]
+points = PackedVector2Array(-5, -5, 3, -5)
+width = 1.5
+default_color = Color(0.97, 0.82, 0.78, 1)

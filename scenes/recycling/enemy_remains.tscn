@@ -1,0 +1,22 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/enemy_remains.gd" id="1_remains"]
+[ext_resource type="Texture2D" path="res://assets/Dark World - Free Asset Pack - v1.0/Character/character_sheet.png" id="2_sheet"]
+
+[node name="EnemyRemains" type="Node2D"]
+z_index = -1
+script = ExtResource("1_remains")
+
+[node name="Shadow" type="Polygon2D" parent="."]
+color = Color(0.63, 0.43, 0.22, 0.3)
+polygon = PackedVector2Array(-24, 0, -16, -9, 16, -9, 24, 0, 16, 9, -16, 9)
+
+[node name="Body" type="Sprite2D" parent="."]
+position = Vector2(0, -2)
+rotation = 1.5707964
+scale = Vector2(1.4, 1)
+modulate = Color(0.6, 0.53, 0.48, 1)
+texture = ExtResource("2_sheet")
+hframes = 4
+vframes = 6
+frame = 12

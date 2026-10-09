@@ -1,0 +1,29 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/spore_weapon.gd" id="1_weapon"]
+[ext_resource type="PackedScene" path="res://scenes/combat/spore_projectile.tscn" id="2_projectile"]
+
+[node name="SporeWeapon" type="Node2D"]
+script = ExtResource("1_weapon")
+projectile_scene = ExtResource("2_projectile")
+
+[node name="RangeOutline" type="Line2D" parent="."]
+visible = false
+z_index = -2
+position = Vector2(0, 28)
+closed = true
+width = 1.5
+default_color = Color(0.61, 0.78, 0.52, 0.25)
+antialiased = true
+
+[node name="Muzzle" type="Polygon2D" parent="."]
+modulate = Color(1, 1, 1, 0)
+color = Color(0.85, 1, 0.56, 1)
+polygon = PackedVector2Array(-9, 0, -3, -3, 0, -9, 3, -3, 9, 0, 3, 3, 0, 9, -3, 3)
+
+[node name="FireTimer" type="Timer" parent="."]
+wait_time = 0.8
+autostart = true
+process_callback = 0
+
+[connection signal="timeout" from="FireTimer" to="." method="_on_fire_timer_timeout"]

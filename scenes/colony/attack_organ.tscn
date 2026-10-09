@@ -1,0 +1,78 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/attack_organ.gd" id="1_organ"]
+
+[sub_resource type="RectangleShape2D" id="Rectangle_hit"]
+size = Vector2(46, 52)
+
+[node name="AttackOrgan" type="Node2D"]
+script = ExtResource("1_organ")
+
+[node name="Shadow" type="Polygon2D" parent="."]
+color = Color(0.05, 0.08, 0.06, 0.5)
+polygon = PackedVector2Array(-24, 0, -16, -7, 16, -7, 24, 0, 16, 7, -16, 7)
+
+[node name="Stalk" type="Polygon2D" parent="."]
+color = Color(0.56, 0.66, 0.43, 1)
+polygon = PackedVector2Array(-7, -3, -5, -30, 5, -30, 8, -3, 0, 2)
+
+[node name="Cap" type="Polygon2D" parent="."]
+color = Color(0.63, 0.31, 0.23, 1)
+polygon = PackedVector2Array(-23, -25, -17, -36, -5, -42, 8, -41, 20, -32, 23, -25, 12, -20, -11, -20)
+
+[node name="CapHighlight" type="Polygon2D" parent="."]
+color = Color(0.83, 0.47, 0.29, 1)
+polygon = PackedVector2Array(-17, -31, -5, -38, 6, -37, 14, -32, 3, -29, -7, -29)
+
+[node name="InventorySlots" type="HBoxContainer" parent="."]
+offset_left = -23.0
+offset_top = 12.0
+offset_right = 23.0
+offset_bottom = 18.0
+mouse_filter = 2
+theme_override_constants/separation = 2
+
+[node name="Slot1" type="ColorRect" parent="InventorySlots"]
+custom_minimum_size = Vector2(6, 6)
+layout_mode = 2
+mouse_filter = 2
+color = Color(0.96, 0.83, 0.47, 1)
+
+[node name="Slot2" type="ColorRect" parent="InventorySlots"]
+custom_minimum_size = Vector2(6, 6)
+layout_mode = 2
+mouse_filter = 2
+color = Color(0.96, 0.83, 0.47, 1)
+
+[node name="Slot3" type="ColorRect" parent="InventorySlots"]
+custom_minimum_size = Vector2(6, 6)
+layout_mode = 2
+mouse_filter = 2
+color = Color(0.96, 0.83, 0.47, 1)
+
+[node name="Slot4" type="ColorRect" parent="InventorySlots"]
+custom_minimum_size = Vector2(6, 6)
+layout_mode = 2
+mouse_filter = 2
+color = Color(0.96, 0.83, 0.47, 1)
+
+[node name="Slot5" type="ColorRect" parent="InventorySlots"]
+custom_minimum_size = Vector2(6, 6)
+layout_mode = 2
+mouse_filter = 2
+color = Color(0.23, 0.29, 0.26, 1)
+
+[node name="Slot6" type="ColorRect" parent="InventorySlots"]
+custom_minimum_size = Vector2(6, 6)
+layout_mode = 2
+mouse_filter = 2
+color = Color(0.23, 0.29, 0.26, 1)
+
+[node name="HitArea" type="Area2D" parent="."]
+position = Vector2(0, -20)
+collision_mask = 0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="HitArea"]
+shape = SubResource("Rectangle_hit")
+
+[connection signal="input_event" from="HitArea" to="." method="_on_hit_area_input_event"]

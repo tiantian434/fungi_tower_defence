@@ -1,0 +1,22 @@
+[gd_scene format=3 uid="uid://bpmj7to36nssq"]
+
+[ext_resource type="Script" uid="uid://0x4kj1c8kmij" path="res://scripts/mother_core.gd" id="1_rug6g"]
+[ext_resource type="Texture2D" uid="uid://dosiwghlm7wx1" path="res://assets/Dark World - Free Asset Pack - v1.0/Inventory/inventory_item_mushroom.png" id="2_ua3di"]
+
+[node name="MotherCore" type="Node2D" unique_id=1235887925]
+script = ExtResource("1_rug6g")
+
+[node name="Sprite2D" type="Sprite2D" parent="." unique_id=789794938]
+position = Vector2(0, -35)
+scale = Vector2(2, 2)
+texture = ExtResource("2_ua3di")
+
+[node name="HealthBar" type="ProgressBar" parent="." unique_id=726205919]
+offset_left = -40.0
+offset_top = -90.0
+offset_right = 40.0
+offset_bottom = -82.0
+mouse_filter = 2
+max_value = 240.0
+value = 240.0
+show_percentage = false

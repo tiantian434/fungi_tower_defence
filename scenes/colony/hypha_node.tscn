@@ -1,0 +1,34 @@
+[gd_scene format=3 uid="uid://cbqbiefdloo2k"]
+
+[ext_resource type="Script" uid="uid://c1b7kldr655nc" path="res://scripts/hypha_node.gd" id="1_node"]
+
+[sub_resource type="CircleShape2D" id="Circle_hit"]
+radius = 22.0
+
+[node name="HyphaNode" type="Node2D" unique_id=718355405]
+script = ExtResource("1_node")
+
+[node name="Body" type="Polygon2D" parent="." unique_id=1043940818]
+color = Color(0.39, 0.62, 0.48, 1)
+polygon = PackedVector2Array(-15, -5, -9, -13, 3, -15, 13, -7, 15, 5, 7, 14, -5, 15, -14, 7)
+
+[node name="Center" type="Polygon2D" parent="." unique_id=407370093]
+color = Color(0.77, 0.86, 0.66, 1)
+polygon = PackedVector2Array(0, -6, 6, 0, 0, 6, -6, 0)
+
+[node name="SelectionRing" type="Line2D" parent="." unique_id=419261583]
+visible = false
+scale = Vector2(1, 0.6)
+points = PackedVector2Array(22, 0, 21.577, 4.292, 20.325, 8.419, 18.292, 12.223, 15.556, 15.556, 12.223, 18.292, 8.419, 20.325, 4.292, 21.577, 0, 22, -4.292, 21.577, -8.419, 20.325, -12.223, 18.292, -15.556, 15.556, -18.292, 12.223, -20.325, 8.419, -21.577, 4.292, -22, 0, -21.577, -4.292, -20.325, -8.419, -18.292, -12.223, -15.556, -15.556, -12.223, -18.292, -8.419, -20.325, -4.292, -21.577, 0, -22, 4.292, -21.577, 8.419, -20.325, 12.223, -18.292, 15.556, -15.556, 18.292, -12.223, 20.325, -8.419, 21.577, -4.292)
+closed = true
+width = 2.0
+default_color = Color(0.96, 0.8, 0.4, 1)
+antialiased = true
+
+[node name="HitArea" type="Area2D" parent="." unique_id=629475587]
+collision_mask = 0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="HitArea" unique_id=304003909]
+shape = SubResource("Circle_hit")
+
+[connection signal="input_event" from="HitArea" to="." method="_on_hit_area_input_event"]
