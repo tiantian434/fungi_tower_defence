@@ -4,6 +4,7 @@ extends Node2D
 
 @export var start_node: Node2D
 @export var end_node: Node2D
+@export var enabled: bool = true
 
 @onready var vein: Line2D = $Vein
 
@@ -23,10 +24,17 @@ func _process(_delta: float) -> void:
 		start_point,
 		end_point
 	])
+	vein.modulate = Color.WHITE if enabled else Color(0.65, 0.35, 0.28, 0.35)
 
 
 func has_endpoints() -> bool:
 	return is_instance_valid(start_node) and is_instance_valid(end_node)
+
+
+func is_usable() -> bool:
+	return enabled and not is_queued_for_deletion() and has_endpoints() and (
+		not start_node.is_queued_for_deletion() and not end_node.is_queued_for_deletion()
+	)
 
 
 func get_length() -> float:
@@ -36,7 +44,7 @@ func get_length() -> float:
 
 
 func connects(first: Node2D, second: Node2D) -> bool:
-	return has_endpoints() and (
+	return is_usable() and (
 		(start_node == first and end_node == second) or
 		(start_node == second and end_node == first)
 	)

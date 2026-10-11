@@ -1,6 +1,7 @@
 [gd_scene format=3 uid="uid://cbqbiefdloo2k"]
 
 [ext_resource type="Script" uid="uid://c1b7kldr655nc" path="res://scripts/hypha_node.gd" id="1_node"]
+[ext_resource type="PackedScene" path="res://scenes/colony/fungal_patch.tscn" id="2_patch"]
 
 [sub_resource type="CircleShape2D" id="Circle_hit"]
 radius = 22.0
@@ -30,5 +31,7 @@ collision_mask = 0
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="HitArea" unique_id=304003909]
 shape = SubResource("Circle_hit")
+
+[node name="FungalPatch" parent="." instance=ExtResource("2_patch")]
 
 [connection signal="input_event" from="HitArea" to="." method="_on_hit_area_input_event"]

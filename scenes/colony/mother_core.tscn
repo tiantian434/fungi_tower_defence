@@ -1,6 +1,7 @@
 [gd_scene format=3 uid="uid://bpmj7to36nssq"]
 
 [ext_resource type="Script" uid="uid://0x4kj1c8kmij" path="res://scripts/mother_core.gd" id="1_rug6g"]
+[ext_resource type="PackedScene" path="res://scenes/colony/fungal_patch.tscn" id="3_patch"]
 [ext_resource type="Texture2D" uid="uid://dosiwghlm7wx1" path="res://assets/Dark World - Free Asset Pack - v1.0/Inventory/inventory_item_mushroom.png" id="2_ua3di"]
 
 [node name="MotherCore" type="Node2D" unique_id=1235887925]
@@ -20,3 +21,6 @@ mouse_filter = 2
 max_value = 240.0
 value = 240.0
 show_percentage = false
+
+[node name="FungalPatch" parent="." instance=ExtResource("3_patch")]
+coverage_radius = 140.0

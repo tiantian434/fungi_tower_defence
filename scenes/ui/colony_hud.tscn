@@ -88,3 +88,15 @@ theme_override_font_sizes/font_size = 18
 text = "回收：在途 0 · 已送达 0 · 中断 0
 消化：排队 0 · 待送达 0 · 已消化 0
 营养回收：+0"
+
+[node name="FieldLabel" type="Label" parent="."]
+offset_left = 820.0
+offset_top = 640.0
+offset_right = 1176.0
+offset_bottom = 762.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.75, 0.85, 0.63, 1)
+theme_override_fonts/font = SubResource("SystemFont_ui")
+theme_override_font_sizes/font_size = 16
+text = "菌域：等待连通查询"
+horizontal_alignment = 2

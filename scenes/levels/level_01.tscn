@@ -10,10 +10,11 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/colony_hud.tscn" id="7_hud"]
 [ext_resource type="PackedScene" path="res://scenes/combat/spore_weapon.tscn" id="8_weapon"]
 [ext_resource type="PackedScene" path="res://scenes/systems/enemy_spawner.tscn" id="9_spawner"]
-[ext_resource type="PackedScene" path="res://scenes/colony/recovery_organ.tscn" id="10_recovery"]
+[ext_resource type="PackedScene" path="res://scenes/colony/fungal_field.tscn" id="10_field"]
 [ext_resource type="PackedScene" path="res://scenes/colony/digestive_organ.tscn" id="11_digestive"]
 [ext_resource type="PackedScene" path="res://scenes/systems/remains_spawner.tscn" id="12_remains"]
 [ext_resource type="PackedScene" path="res://scenes/systems/recycling_system.tscn" id="13_recycling"]
+[ext_resource type="PackedScene" path="res://scenes/systems/hypha_network.tscn" id="14_network"]
 
 [node name="Level01" type="Node2D" unique_id=1081824810]
 script = ExtResource("1_i2aat")
@@ -27,6 +28,9 @@ offset_right = 1200.0
 offset_bottom = 800.0
 mouse_filter = 2
 color = Color(0.1254902, 0.16078432, 0.13725491, 1)
+
+[node name="FungalField" parent="World" node_paths=PackedStringArray("network") instance=ExtResource("10_field")]
+network = NodePath("../../Systems/HyphaNetwork")
 
 [node name="Colony" type="Node2D" parent="World" unique_id=1375296272]
 y_sort_enabled = true
@@ -43,7 +47,8 @@ display_name = "前线菌结"
 
 [node name="AttackOrgan" parent="World/Colony/Nodes/HyphaNode" instance=ExtResource("5_organ")]
 
-[node name="RecoveryOrgan" parent="World/Colony/Nodes/HyphaNode" instance=ExtResource("10_recovery")]
+[node name="FungalPatch" parent="World/Colony/Nodes/HyphaNode" index="4"]
+coverage_radius = 320.0
 
 [node name="SporeWeapon" parent="World/Colony/Nodes/HyphaNode" node_paths=PackedStringArray("inventory_owner", "enemy_container", "projectile_container") instance=ExtResource("8_weapon")]
 position = Vector2(0, -28)
@@ -99,6 +104,11 @@ position = Vector2(260, 300)
 
 [node name="Systems" type="Node" parent="."]
 
+[node name="HyphaNetwork" parent="Systems" node_paths=PackedStringArray("mother_core", "nodes_container", "connections_container") instance=ExtResource("14_network")]
+mother_core = NodePath("../../World/Colony/MotherCore")
+nodes_container = NodePath("../../World/Colony/Nodes")
+connections_container = NodePath("../../World/Colony/Connections")
+
 [node name="SupplySystem" parent="Systems" node_paths=PackedStringArray("mother_core", "target_organ", "supply_edge", "packet_container") instance=ExtResource("6_supply")]
 mother_core = NodePath("../../World/Colony/MotherCore")
 target_organ = NodePath("../../World/Colony/Nodes/HyphaNode/AttackOrgan")
@@ -114,11 +124,12 @@ spawn_points = NodePath("../../World/SpawnPoints")
 enemy_container = NodePath("../../World/Enemies")
 remains_container = NodePath("../../World/Remains")
 
-[node name="RecyclingSystem" parent="Systems" node_paths=PackedStringArray("collector", "digestive_organ", "return_edge", "remains_container", "packet_container") instance=ExtResource("13_recycling")]
-collector = NodePath("../../World/Colony/Nodes/HyphaNode/RecoveryOrgan")
+[node name="RecyclingSystem" parent="Systems" node_paths=PackedStringArray("fungal_field", "digestive_organ", "remains_container", "packet_container") instance=ExtResource("13_recycling")]
+fungal_field = NodePath("../../World/FungalField")
 digestive_organ = NodePath("../../World/Colony/Nodes/RearNode/DigestiveOrgan")
-return_edge = NodePath("../../World/Colony/Connections/RecoveryEdge")
 remains_container = NodePath("../../World/Remains")
 packet_container = NodePath("../../World/RecoveryPackets")
 
 [node name="HUD" parent="." instance=ExtResource("7_hud")]
+
+[editable path="World/Colony/Nodes/HyphaNode"]

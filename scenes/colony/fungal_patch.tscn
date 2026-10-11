@@ -1,0 +1,6 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/fungal_patch.gd" id="1_patch"]
+
+[node name="FungalPatch" type="Node2D"]
+script = ExtResource("1_patch")

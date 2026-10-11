@@ -7,7 +7,8 @@ extends Node2D
 @onready var weapon: SporeWeapon = $World/Colony/Nodes/HyphaNode/SporeWeapon
 @onready var supply_system: SupplySystem = $Systems/SupplySystem
 @onready var enemy_spawner: EnemySpawner = $Systems/EnemySpawner
-@onready var recovery_organ: RecoveryOrgan = $World/Colony/Nodes/HyphaNode/RecoveryOrgan
+@onready var fungal_field: FungalField = $World/FungalField
+@onready var network: HyphaNetwork = $Systems/HyphaNetwork
 @onready var digestive_organ: DigestiveOrgan = $World/Colony/Nodes/RearNode/DigestiveOrgan
 @onready var recycling_system: RecyclingSystem = $Systems/RecyclingSystem
 @onready var hud: ColonyHUD = $HUD
@@ -24,7 +25,7 @@ func _ready() -> void:
 	supply_system.notice.connect(hud.show_notice)
 	enemy_spawner.wave_changed.connect(hud.show_battle)
 	enemy_spawner.wave_finished.connect(_on_wave_finished)
-	recovery_organ.selection_requested.connect(_on_recovery_selection_requested)
+	fungal_field.coverage_changed.connect(hud.show_field)
 	digestive_organ.selection_requested.connect(_on_digestive_selection_requested)
 	recycling_system.recycling_changed.connect(hud.show_recycling)
 	digestive_organ.inventory_changed.connect(hud.show_digestion)
@@ -42,6 +43,8 @@ func _ready() -> void:
 	hud.show_recycling(0, 0, 0)
 	hud.show_digestion(digestive_organ.get_queued_count(), digestive_organ.incoming_remains)
 	hud.show_recovery_totals(digestive_organ.digested_count, digestive_organ.total_nutrition_produced)
+	fungal_field.refresh(0.0)
+	hud.show_field(network.get_connected_nodes().size(), network.get_nodes().size())
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -49,6 +52,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		_select_node(null)
 	elif event.is_action_pressed("debug_damage_core"):
 		mother_core.take_damage(30)
+	elif event.is_action_pressed("debug_toggle_frontline"):
+		_toggle_frontline_connections()
 	elif event.is_action_pressed("request_supply"):
 		supply_system.request_supply()
 	elif event.is_action_pressed("debug_consume_nutrition"):
@@ -96,8 +101,14 @@ func _on_wave_finished() -> void:
 		hud.show_battle_result(true)
 
 
-func _on_recovery_selection_requested() -> void:
-	_select_node(recovery_organ.get_parent() as HyphaNode)
+func _toggle_frontline_connections() -> void:
+	if mother_core.health <= 0:
+		return
+	var connected := not supply_system.supply_edge.enabled
+	supply_system.supply_edge.enabled = connected
+	$World/Colony/Connections/RecoveryEdge.enabled = connected
+	fungal_field.refresh(0.0)
+	hud.show_notice("前线已接回，菌域逐渐展开" if connected else "前线已失联：停止回收，菌域在 5 秒后开始收缩")
 
 
 func _on_digestive_selection_requested() -> void:

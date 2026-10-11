@@ -4,15 +4,19 @@ extends Node
 
 signal recycling_changed(in_transit: int, delivered: int, interrupted: int)
 
+class Pickup:
+	var remains: EnemyRemains
+	var source: Node2D
+	var route: Array[HyphaEdge]
+
 class Shipment:
 	var remains: EnemyRemains
 	var receiver: DigestiveOrgan
 	var packet: RemainsPacket
 	var nutrition: int
 
-@export var collector: RecoveryOrgan
+@export var fungal_field: FungalField
 @export var digestive_organ: DigestiveOrgan
-@export var return_edge: HyphaEdge
 @export var remains_container: Node2D
 @export var packet_container: Node2D
 @export var packet_scene: PackedScene
@@ -31,17 +35,18 @@ func _on_dispatch_timer_timeout() -> void:
 
 
 func try_dispatch() -> bool:
-	if not is_instance_valid(collector) or not is_instance_valid(digestive_organ):
+	if not is_instance_valid(fungal_field) or not is_instance_valid(fungal_field.network):
 		return false
-	if not is_instance_valid(return_edge) or not return_edge.connects(
-		collector.get_parent(), digestive_organ.get_parent()
-	):
+	if not is_instance_valid(digestive_organ) or digestive_organ.is_queued_for_deletion():
+		return false
+	if digestive_organ.get_parent() not in fungal_field.network.get_connected_nodes():
 		return false
 	if not is_instance_valid(packet_container) or packet_scene == null:
 		return false
-	var remains := _find_nearest_remains()
-	if remains == null or not digestive_organ.reserve_remains():
+	var pickup := _find_pickup()
+	if pickup == null or not digestive_organ.reserve_remains():
 		return false
+	var remains := pickup.remains
 	if not remains.try_claim():
 		digestive_organ.cancel_reservation()
 		return false
@@ -66,21 +71,29 @@ func try_dispatch() -> bool:
 	packet_container.add_child(packet)
 	packet.global_position = remains.global_position
 	_emit_recycling_changed()
-	collector.play_collect_feedback()
-	packet.start_transport(return_edge, collector.get_parent(), digestive_organ.get_parent())
+	packet.start_transport(pickup.route, pickup.source, digestive_organ.get_parent())
 	return true
 
 
-func _find_nearest_remains() -> EnemyRemains:
+func _find_pickup() -> Pickup:
 	if not is_instance_valid(remains_container):
 		return null
-	var nearest: EnemyRemains = null
-	var nearest_distance := collector.pickup_radius * collector.pickup_radius
+	var nearest: Pickup = null
+	var nearest_distance := INF
 	for child in remains_container.get_children():
 		if child is EnemyRemains and child.is_available():
-			var distance := collector.global_position.distance_squared_to(child.global_position)
+			var source := fungal_field.get_nearest_collector(child.global_position)
+			if source == null:
+				continue
+			var route := fungal_field.network.find_path(source, digestive_organ.get_parent())
+			if route.is_empty() and source != digestive_organ.get_parent():
+				continue
+			var distance := source.global_position.distance_squared_to(child.global_position)
 			if distance <= nearest_distance:
-				nearest = child
+				nearest = Pickup.new()
+				nearest.remains = child
+				nearest.source = source
+				nearest.route = route
 				nearest_distance = distance
 	return nearest
 

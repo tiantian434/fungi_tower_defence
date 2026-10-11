@@ -84,7 +84,7 @@ func _test_death_and_delayed_income() -> void:
 	enemy.mother_core = level.mother_core
 	enemy.move_speed = 0.0
 	level.get_node("World/Enemies").add_child(enemy)
-	enemy.global_position = level.recovery_organ.global_position + Vector2(140, 0)
+	enemy.global_position = level.attack_organ.global_position + Vector2(140, 0)
 	var death_position := enemy.global_position
 	enemy.take_damage(999)
 	enemy.take_damage(999)
@@ -101,7 +101,7 @@ func _test_death_and_delayed_income() -> void:
 		"Income or storage was credited before arrival")
 	var packet := level.get_node("World/RecoveryPackets").get_child(0) as RemainsPacket
 	await _wait_frames(12)
-	_check(packet.global_position.distance_to(level.recovery_organ.global_position) < 140.0,
+	_check(packet.global_position.distance_to(level.attack_organ.global_position) < 140.0,
 		"Pickup packet did not move to frontline node")
 	await _wait_for_transport(level)
 	_check(not is_instance_valid(remains), "Delivered remains were not removed")
@@ -125,24 +125,27 @@ func _test_death_and_delayed_income() -> void:
 func _test_interruptions_and_configuration() -> void:
 	var level := await _new_level()
 	var system: RecyclingSystem = level.recycling_system
-	var remains := _add_remains(level, level.recovery_organ.global_position + Vector2(20, 0))
-	var endpoint: Node2D = system.return_edge.end_node
-	system.return_edge.end_node = null
+	var remains := _add_remains(level, level.attack_organ.global_position + Vector2(20, 0))
+	var return_edge := level.get_node("World/Colony/Connections/RecoveryEdge") as HyphaEdge
+	var endpoint: Node2D = return_edge.end_node
+	return_edge.end_node = null
+	level.supply_system.supply_edge.enabled = false
 	_check(not system.try_dispatch(), "Disconnected route accepted shipment")
 	_check(remains.is_available() and level.digestive_organ.incoming_remains == 0,
 		"Rejected route claimed resource")
-	system.return_edge.end_node = endpoint
+	return_edge.end_node = endpoint
+	level.supply_system.supply_edge.enabled = true
 	_check(system.try_dispatch(), "Restored route rejected shipment")
 	await _wait_frames(24)
 	var packet := level.get_node("World/RecoveryPackets").get_child(0) as RemainsPacket
 	var drop_position := packet.global_position
-	system.return_edge.end_node = null
+	return_edge.end_node = null
 	await _wait_for_transport(level)
 	_check(remains.is_available() and remains.visible, "Interrupted remains did not return to ground")
 	_check(remains.global_position.distance_to(drop_position) < 0.01, "Remains dropped at wrong position")
 	_check(level.mother_core.nutrition == 72 and level.digestive_organ.incoming_remains == 0,
 		"Interruption credited income or leaked reservation")
-	system.return_edge.end_node = endpoint
+	return_edge.end_node = endpoint
 	system.try_dispatch()
 	packet = level.get_node("World/RecoveryPackets").get_child(0) as RemainsPacket
 	packet.cancel_transport()
@@ -166,7 +169,7 @@ func _test_capacity_and_core_connection() -> void:
 	var organ: DigestiveOrgan = level.digestive_organ
 	organ.capacity = 2
 	organ.digest_timer.wait_time = 5.0
-	var source: Vector2 = level.recovery_organ.global_position
+	var source: Vector2 = level.attack_organ.global_position
 	for offset in [10.0, 20.0, 30.0]:
 		_add_remains(level, source + Vector2(offset, 0))
 	_check(level.recycling_system.try_dispatch() and level.recycling_system.try_dispatch(),
@@ -197,7 +200,7 @@ func _test_capacity_and_core_connection() -> void:
 func _test_receiver_loss_and_restart() -> void:
 	var level := await _new_level()
 	var original: DigestiveOrgan = level.digestive_organ
-	var remains := _add_remains(level, level.recovery_organ.global_position)
+	var remains := _add_remains(level, level.attack_organ.global_position)
 	level.recycling_system.try_dispatch()
 	var other := DIGESTIVE_SCENE.instantiate() as DigestiveOrgan
 	level.add_child(other)
@@ -208,7 +211,7 @@ func _test_receiver_loss_and_restart() -> void:
 	await _remove_level(level)
 
 	level = await _new_level()
-	remains = _add_remains(level, level.recovery_organ.global_position)
+	remains = _add_remains(level, level.attack_organ.global_position)
 	level.recycling_system.try_dispatch()
 	level.digestive_organ.queue_free()
 	await _wait_for_transport(level)
@@ -217,7 +220,7 @@ func _test_receiver_loss_and_restart() -> void:
 	await _remove_level(level)
 
 	level = await _new_level()
-	_add_remains(level, level.recovery_organ.global_position)
+	_add_remains(level, level.attack_organ.global_position)
 	level.recycling_system.try_dispatch()
 	var event := InputEventKey.new()
 	event.keycode = KEY_R

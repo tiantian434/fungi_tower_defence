@@ -19,7 +19,7 @@ func start_transport(connection: HyphaEdge) -> void:
 
 	edge = connection
 	_travelling = true
-	if not is_instance_valid(edge) or not edge.has_endpoints():
+	if not is_instance_valid(edge) or not edge.is_usable():
 		_finish(false)
 		return
 
@@ -34,7 +34,7 @@ func _physics_process(delta: float) -> void:
 	if not _travelling or _finished:
 		return
 
-	if not is_instance_valid(edge) or not edge.has_endpoints():
+	if not is_instance_valid(edge) or not edge.is_usable():
 		_finish(false)
 		return
 

@@ -39,8 +39,8 @@ func _on_dispatch_timer_timeout() -> void:
 func _dispatch_packet(show_rejection: bool) -> bool:
 	if not is_instance_valid(mother_core) or not is_instance_valid(target_organ):
 		return _reject("缺少母核或供养器官", show_rejection)
-	if not is_instance_valid(supply_edge) or not supply_edge.has_endpoints():
-		return _reject("菌丝缺少端点，暂时无法供养", show_rejection)
+	if not is_instance_valid(supply_edge) or not supply_edge.is_usable():
+		return _reject("供养菌丝未连通，暂时无法供养", show_rejection)
 	if supply_edge.start_node != mother_core or supply_edge.end_node != target_organ.get_parent():
 		return _reject("供养线路没有连接母核和目标菌结", show_rejection)
 	if not is_instance_valid(packet_container) or packet_scene == null:

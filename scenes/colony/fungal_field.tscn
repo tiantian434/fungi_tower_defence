@@ -1,0 +1,15 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/fungal_field.gd" id="1_field"]
+[ext_resource type="Shader" path="res://shaders/fungal_field.gdshader" id="2_shader"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_field"]
+resource_local_to_scene = true
+shader = ExtResource("2_shader")
+
+[node name="FungalField" type="Node2D"]
+z_index = -8
+script = ExtResource("1_field")
+
+[node name="Surface" type="Polygon2D" parent="."]
+material = SubResource("ShaderMaterial_field")

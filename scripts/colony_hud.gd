@@ -8,6 +8,7 @@ extends CanvasLayer
 @onready var notice_label: Label = $NoticeLabel
 @onready var battle_label: Label = $BattleLabel
 @onready var recovery_label: Label = $RecoveryLabel
+@onready var field_label: Label = $FieldLabel
 
 var _core_nutrition: int = 0
 var _organ_nutrition: int = 0
@@ -25,6 +26,10 @@ var _recovered_nutrition: int = 0
 
 func show_selection(display_name: String) -> void:
 	selection_label.text = "未选择菌结" if display_name.is_empty() else "已选择：%s" % display_name
+
+
+func show_field(connected: int, total: int) -> void:
+	field_label.text = ("菌域：%d / %d 处连通\n绿色地表可回收 · 褐色表示失联\n金色圆圈表示选中器官的射程\nC 断开 / 接回前线") % [connected, total]
 
 
 func show_core_nutrition(current: int) -> void:
