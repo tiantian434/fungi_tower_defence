@@ -1,6 +1,8 @@
 class_name FirstLevel
 extends "res://scripts/colony_operations_demo.gd"
-## 第一关只接线：六波、观察界面与生命周期复用现有的资源和组织系统。
+## 第一关只接线：三段递进战斗，复用资源和组织系统。
+
+@export var development_shortcuts_enabled: bool = false
 
 signal level_finished(snapshot: Dictionary)
 
@@ -37,7 +39,7 @@ func _ready() -> void:
 	enemy_spawner.auto_start = false
 	pause_controller.reset()
 	super._ready()
-	# 开发演示仍保留自己的接口，正式局仅由六波模块驱动生成器。
+	# 正式局仅由关卡波次模块驱动生成器。
 	_disconnect_demo_signals()
 	combat_hint_controller.set_enabled(false)
 	hud.set_combat_demo_enabled(false)
@@ -63,7 +65,8 @@ func _ready() -> void:
 	LevelStoryCaption.attach(self, 1)
 	initialize_level_camera(compact_hud, _camera_input_allowed)
 	_refresh_formal_hud()
-	hud.show_notice("第一关：可先用 G 接通左前方破旧画架（80能量），再开始第一波涂鸦羊。Space随时暂停规划。")
+	first_guide.record_event(&"opening")
+	hud.show_notice("先用 G 接通左前画架，回收60创作能量；再开始防守。Space可暂停规划。")
 
 
 func _process(delta: float) -> void:
@@ -99,7 +102,7 @@ func _input(event: InputEvent) -> void:
 		return
 	if event is InputEventKey and not event.is_echo():
 		for action: StringName in DEVELOPMENT_SCENES:
-			if event.is_action_pressed(action):
+			if event.is_action_pressed(action) and can_open_development_demos():
 				get_viewport().set_input_as_handled()
 				open_development_demo(action)
 				return
@@ -205,7 +208,8 @@ func _resolve_result() -> void:
 	var flow: Dictionary = wave_flow.get_snapshot()
 	var batch: Dictionary = enemy_spawner.get_batch_snapshot()
 	var won: bool = not _pending_victory.is_empty() and not failed \
-		and int(flow.get("completed_waves", 0)) == 6 and int(flow.get("total_defeated", 0)) == 66 \
+		and int(flow.get("completed_waves", 0)) == wave_flow.WAVE_TOTAL \
+		and int(flow.get("total_defeated", 0)) == wave_flow.get_planned_total() \
 		and String(batch.get("state")) == "completed" and int(batch.get("removed", -1)) == 0 \
 		and int(batch.get("spawned", -1)) == int(batch.get("planned", 0)) \
 		and int(batch.get("defeated", -1)) == int(batch.get("planned", 0)) \
@@ -241,9 +245,8 @@ func _open_second_level() -> void:
 		return
 	_restart_pending = true
 	pause_controller.reset()
-	var player := StoryPlayer.open(self, 2)
-	player.finished.connect(func() -> void:
-		get_tree().change_scene_to_file("res://scenes/levels/second_level.tscn"))
+	if not CampaignNavigator.ensure(get_tree()).launch_level(2):
+		_restart_pending = false
 
 
 func _count_mature_organs() -> int:
@@ -293,7 +296,6 @@ func _connect_first_events() -> void:
 	construction_coordinator.changed.connect(_on_guide_construction)
 	recycling_system.recycling_changed.connect(_on_guide_recycling)
 	colony_progress.progress_changed.connect(_on_guide_recovered)
-	colony_progress.stage_changed.connect(_on_guide_stage)
 	differentiation_system.organ_differentiated.connect(_on_guide_differentiated)
 	tissue_lifecycle.tissue_lost.connect(_on_guide_tissue_lost)
 
@@ -314,11 +316,6 @@ func _on_guide_recycling(_in_transit: int, delivered: int, _interrupted: int) ->
 func _on_guide_recovered(total: int, _products: int) -> void:
 	if total > 0 and not _restart_pending and _result_snapshot.is_empty():
 		first_guide.record_event(&"nutrition_returned", {"total": total})
-
-
-func _on_guide_stage(_previous: ColonyProgress.Stage, current: ColonyProgress.Stage) -> void:
-	if current > ColonyProgress.Stage.NASCENT and not _restart_pending and _result_snapshot.is_empty():
-		first_guide.record_event(&"stage_unlocked", {"stage": colony_progress.get_stage_name()})
 
 
 func _on_guide_differentiated(_id: int, _organ: AttackOrgan, _direction: int) -> void:
@@ -365,7 +362,7 @@ func _refresh_resource_guides() -> void:
 		var plan: Dictionary = growth_system.preview_target(origins[index], marker.global_position)
 		var label: Label = marker.get_node("Hint")
 		label.text = "%s｜G接通约%d创作能量\n每批回收10能量，补给送回小画家后才入账" % [
-			"左前画架 · 可回收80能量" if index == 0 else "右前画架 · 可回收120能量", int(plan.get("total_cost", 0))]
+			"左前画架 · 可回收60能量" if index == 0 else "右前画架 · 可回收60能量", int(plan.get("total_cost", 0))]
 
 
 func _layout_formal_hud() -> void:
@@ -375,8 +372,12 @@ func _layout_formal_hud() -> void:
 	compact_hud.configure(self)
 
 
+func can_open_development_demos() -> bool:
+	return development_shortcuts_enabled and OS.is_debug_build()
+
+
 func open_development_demo(action: StringName) -> void:
-	if _restart_pending or not DEVELOPMENT_SCENES.has(action):
+	if not can_open_development_demos() or _restart_pending or not DEVELOPMENT_SCENES.has(action):
 		return
 	_restart_pending = true
 	wave_flow.stop(&"scene_change")

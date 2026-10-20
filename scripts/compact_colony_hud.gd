@@ -52,6 +52,8 @@ var _history_label: Label
 var _guide_label: Label
 var _guide_toggle: CheckButton
 var _guide_dismiss: Button
+var _guide_card: EventGuideCard
+var _last_guide_key: StringName = &""
 var _selection_health: Label
 var _selection_supply: Button
 var _attack_choice: Button
@@ -134,7 +136,7 @@ func _build_shell() -> void:
 	goal_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	goal_label.add_theme_font_size_override("font_size", 18)
 	goal_label.text = "目标：保护小画家，找回三块记忆碎片" if _level.has_method("get_fragment_targets") else (
-		"目标：保护小画家，摧毁三台AI绘图终端" if _level.has_method("get_facility_targets") else "目标：守住小画家，抵御六波涂鸦羊")
+		"目标：保护小画家，关闭三台绘图终端" if _level.has_method("get_facility_targets") else "目标：守住小画家，画下新的风景")
 	goal_label.tooltip_text = goal_label.text
 	resource_column.add_child(goal_label)
 	var goal_box := ArtUI.paper(ArtUI.UI + "目标.png", 8)
@@ -142,7 +144,7 @@ func _build_shell() -> void:
 	goal_label.add_theme_stylebox_override("normal", goal_box)
 	top_right = _surface("WaveControls")
 	var flow: HBoxContainer = _horizontal(top_right)
-	wave_button = _button(flow, "初始准备 · 1/6", toggle_page.bind(&"wave"))
+	wave_button = _button(flow, "初始准备", toggle_page.bind(&"wave"))
 	for state: String in ["normal", "hover", "pressed", "disabled"]:
 		var wave_paper := ArtUI.paper(ArtUI.UI + "关卡.png", 12)
 		wave_paper.content_margin_left = 42
@@ -214,6 +216,10 @@ func _build_shell() -> void:
 	_toast_timer.wait_time = 5.0
 	_toast_timer.timeout.connect(_toast.hide)
 	add_child(_toast_timer)
+	_guide_card = preload("res://scenes/ui/event_guide_card.tscn").instantiate() as EventGuideCard
+	_root.add_child(_guide_card)
+	_guide_card.dismissed.connect(_level.first_guide.dismiss_current)
+	_guide_card.minimum_size_changed.connect(func() -> void: _layout.call_deferred())
 	drawer = _surface("Details")
 	var column := VBoxContainer.new()
 	column.add_theme_constant_override("separation", 14)
@@ -334,7 +340,7 @@ func _build_pages() -> void:
 		more_items[2][1] = "终端目标与生成"
 	elif _level.has_method("get_fragment_targets"):
 		more_items[2][1] = "碎片与来袭"
-	if _level.has_method("open_development_demo"):
+	if _development_enabled():
 		more_items.append([&"development", "开发演示"])
 	for item: Array in more_items:
 		page.action(item[1], open_page.bind(item[0]), row)
@@ -348,7 +354,7 @@ func _build_pages() -> void:
 	page.add_child(map_toggle)
 	page = _page(&"messages")
 	_history_label = page.text("暂无消息")
-	if _level.has_method("open_development_demo"):
+	if _development_enabled():
 		page = _page(&"development")
 		for caption: String in DEMO_ACTIONS:
 			page.action(caption, _level.open_development_demo.bind(DEMO_ACTIONS[caption]))
@@ -463,11 +469,14 @@ func refresh() -> void:
 	var flow: Dictionary = _level.wave_flow.get_snapshot()
 	var state: StringName = flow.get("state", &"initial_preparation")
 	var wave: int = maxi(1, int(flow.get("wave_index", 0)))
+	var wave_total: int = maxi(1, int(flow.get("wave_total", 1)))
 	if state == &"preparation":
-		wave = mini(6, int(flow.get("completed_waves", 0)) + 1)
-		wave_button.text = "%d/6 波 · %ds" % [wave, ceili(float(flow.get("preparation_remaining", 0.0)))]
+		wave = mini(wave_total, int(flow.get("completed_waves", 0)) + 1)
+		wave_button.text = "%d/%d 波 · %ds" % [wave, wave_total, ceili(float(flow.get("preparation_remaining", 0.0)))]
 	else:
-		wave_button.text = "%d/6 波 · %s" % [wave, "战斗" if state == &"fighting" else "准备"]
+		wave_button.text = "%d/%d 波 · %s" % [wave, wave_total, "战斗" if state == &"fighting" else "准备"]
+	if not _level.has_method("get_objective_caption"):
+		goal_label.text = "目标：守住小画家，抵御%d波涂鸦羊" % wave_total
 	if _level.has_method("get_objective_caption"):
 		wave_button.text = _level.get_objective_caption()
 	if _level.has_method("get_facility_targets"):
@@ -594,6 +603,14 @@ func _refresh_guide() -> void:
 	_guide_toggle.set_pressed_no_signal(bool(guide.get("enabled", true)))
 	_guide_label.text = String(guide.get("text", "")) if bool(guide.get("visible", false)) else "新的操作提示会在这里保留。"
 	_guide_dismiss.disabled = not bool(guide.get("visible", false))
+	var obstructed: bool = drawer.visible or level_menu.is_open()
+	_level.first_guide.set_presentation_paused(obstructed)
+	var was_visible: bool = _guide_card.visible
+	_guide_card.show_snapshot(guide)
+	if obstructed:
+		_guide_card.hide()
+	if was_visible != _guide_card.visible:
+		_layout.call_deferred()
 
 
 func open_page(id: StringName) -> void:
@@ -631,7 +648,7 @@ func is_pointer_over_ui(point: Vector2) -> bool:
 		return false
 	if maturing_selector.get_popup().visible:
 		return true
-	for control: Control in [top_left, top_right, dock, drawer, selection_button, _mode_panel, _toast, camera_reset_button]:
+	for control: Control in [top_left, top_right, dock, drawer, selection_button, _mode_panel, _toast, camera_reset_button, _guide_card]:
 		if control.is_visible_in_tree() and control.get_global_rect().has_point(point):
 			return true
 	return false
@@ -698,8 +715,19 @@ func _on_guide_changed(snapshot: Dictionary) -> void:
 	if not _configured or not is_inside_tree():
 		return
 	_refresh_guide()
-	if bool(snapshot.get("visible", false)):
-		_on_notice("操作提示：" + String(snapshot.get("text", "")).replace("\n", " "))
+	var key: StringName = snapshot.get("current_key", &"")
+	if bool(snapshot.get("visible", false)) and key != _last_guide_key:
+		var message: String = "操作提示：" + String(snapshot.get("text", ""))
+		if not _history.has(message):
+			_history.insert(0, message)
+			if _history.size() > 24: _history.resize(24)
+			_history_label.text = "\n\n".join(_history)
+	_last_guide_key = key
+	_layout.call_deferred()
+
+
+func _development_enabled() -> bool:
+	return _level.has_method("can_open_development_demos") and _level.can_open_development_demos()
 
 
 func _page(id: StringName) -> CompactHUDPage:
@@ -758,8 +786,11 @@ func _layout() -> void:
 	camera_reset_button.position = Vector2(viewport_size.x - 164, viewport_size.y - 82)
 	camera_reset_button.size = Vector2(140, 46)
 	_layout_mode_hint()
-	_toast.position = Vector2(24, maxf(128, maxf(top_left.get_global_rect().end.y,
-		top_right.get_global_rect().end.y) + 12))
+	var under_header: float = maxf(128, maxf(top_left.get_global_rect().end.y,
+		top_right.get_global_rect().end.y) + 12)
+	_guide_card.position = Vector2(24, under_header)
+	_guide_card.size = Vector2(minf(560, viewport_size.x - 48), 0)
+	_toast.position = Vector2(24, _guide_card.get_global_rect().end.y + 10 if _guide_card.visible else under_header)
 	_toast.size = Vector2(minf(660, drawer.position.x - 40 if drawer.visible else viewport_size.x - 48), 48)
 
 

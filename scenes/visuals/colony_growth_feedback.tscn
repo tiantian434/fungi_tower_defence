@@ -1,0 +1,16 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/visuals/colony_growth_feedback.gd" id="1_feedback"]
+
+[node name="ColonyGrowthFeedback" type="Node2D"]
+z_index = 20
+script = ExtResource("1_feedback")
+
+[node name="EnergyGain" type="Label" parent="."]
+visible = false
+offset_left = -150.0
+offset_top = -174.0
+offset_right = 150.0
+offset_bottom = -138.0
+mouse_filter = 2
+horizontal_alignment = 1

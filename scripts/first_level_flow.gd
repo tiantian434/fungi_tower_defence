@@ -1,22 +1,19 @@
 class_name FirstLevelFlow
 extends Node
-## 六波流程只管理批次与准备倒计时；关卡负责母核生死和最终结算。
+## 三段首关流程只管理批次与准备倒计时；关卡负责母核生死和最终结算。
 
 signal changed(snapshot: Dictionary)
 signal victory_candidate(evidence: Dictionary)
 signal interrupted(reason: StringName)
 
-const WAVE_TOTAL: int = 6
+const WAVE_TOTAL: int = 3
 
 @export var waves: Array[FirstLevelWave] = [
 	preload("res://resources/first_level_waves/wave_01.tres"),
 	preload("res://resources/first_level_waves/wave_02.tres"),
 	preload("res://resources/first_level_waves/wave_03.tres"),
-	preload("res://resources/first_level_waves/wave_04.tres"),
-	preload("res://resources/first_level_waves/wave_05.tres"),
-	preload("res://resources/first_level_waves/wave_06.tres"),
 ]
-@export var preparation_seconds: float = 20.0
+@export var preparation_seconds: float = 15.0
 
 var _spawner: EnemySpawner
 var _bindings: Array[Dictionary] = []
@@ -252,6 +249,13 @@ func get_snapshot() -> Dictionary:
 		"total_defeated": _total_defeated, "batch_id": _batch_id,
 		"batch_generation": _batch_generation, "reason": String(_reason),
 	}
+
+
+func get_planned_total() -> int:
+	var total: int = 0
+	for wave: FirstLevelWave in waves:
+		total += _get_wave_count(wave)
+	return total
 
 
 func stop(reason: StringName) -> void:

@@ -3,6 +3,8 @@ extends Resource
 ## 有限压力上限的持续生产配置；各设施在相同阶段保持独立周期。
 
 @export var preparation_seconds: float = 30.0
+## 各终端第一次生成的间隔；0 保持同时启动。提前开战仍保留此间隔。
+@export var source_activation_interval_seconds: float = 0.0
 @export var cycle_seconds: float = 35.0
 @export var warning_seconds: float = 5.0
 @export var destruction_grace_seconds: float = 20.0
@@ -20,7 +22,7 @@ extends Resource
 
 
 func is_valid() -> bool:
-	for value: float in [preparation_seconds, warning_seconds, destruction_grace_seconds,
+	for value: float in [preparation_seconds, source_activation_interval_seconds, warning_seconds, destruction_grace_seconds,
 			advanced_after_seconds, full_after_seconds]:
 		if not is_finite(value) or value < 0:
 			return false
@@ -32,6 +34,10 @@ func is_valid() -> bool:
 		if scene == null or not scene.can_instantiate():
 			return false
 	return true
+
+
+func get_initial_delay(source_index: int) -> float:
+	return preparation_seconds + maxi(0, source_index) * source_activation_interval_seconds
 
 
 func get_scenes_for_cycle(elapsed: float, cycle: int, source_index: int) -> Array[PackedScene]:

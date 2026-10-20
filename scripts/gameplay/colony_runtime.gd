@@ -53,6 +53,7 @@ var _camera_hud: CompactColonyHUD
 @onready var repair_supply_system: RepairSupplySystem = $Systems/RepairSupplySystem
 @onready var repair_input_controller: RepairInputController = $Systems/RepairInputController
 @onready var hud: ColonyHUD = $HUD
+@onready var growth_feedback: ColonyGrowthFeedback = get_node_or_null("World/GrowthFeedback") as ColonyGrowthFeedback
 
 var tissue_lifecycle: TissueLifecycle
 var selected_node: HyphaNode = null
@@ -416,6 +417,9 @@ func _connect_nutrition_return() -> void:
 	colony_progress.progress_changed.connect(hud.show_recovered_progress)
 	colony_progress.progress_changed.connect(_refresh_growth_stage)
 	colony_progress.stage_changed.connect(_on_colony_stage_changed)
+	colony_progress.stage_unlocked.connect(_on_colony_stage_unlocked)
+	if is_instance_valid(growth_feedback):
+		growth_feedback.configure(mother_core, network_system, colony_progress)
 	if is_instance_valid(digestive_organ):
 		digestive_organ.output_changed.connect(hud.show_digestive_output)
 	nutrition_return_system.return_changed.connect(hud.show_nutrition_return)
@@ -440,6 +444,14 @@ func _on_colony_stage_changed(_previous_stage: ColonyProgress.Stage,
 			hud.show_notice("创作进入成形阶段：选中铅笔炮台，可花8创作能量改装为橡皮炮台或喷漆炮台")
 		else:
 			hud.show_notice("创作进入「%s」阶段" % colony_progress.get_stage_name())
+
+
+func _on_colony_stage_unlocked(stage: ColonyProgress.Stage) -> void:
+	var stage_name: String = "铺展" if stage == ColonyProgress.Stage.EXPANDED else "成形"
+	# 正式关卡拥有事件教学；独立演示仍只使用自己的说明界面。
+	var guide: FirstEventGuide = get("first_guide") as FirstEventGuide if "first_guide" in self else null
+	if is_instance_valid(guide):
+		guide.record_event(&"stage_unlocked", {"stage_name": stage_name, "stage_index": int(stage)})
 
 
 func _connect_growth() -> void:

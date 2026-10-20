@@ -13,9 +13,19 @@ class QuietSecondLevel:
 var failures: Array[String] = []
 var _active_level: SecondLevel
 var _next_maintenance: float = 0.0
+var _built_points: Array[Vector2] = []
 
 
 func _initialize() -> void:
+	node_added.connect(func(node: Node) -> void:
+		if node is GameAudio:
+			node.preferences_path = "res://.artifact_work/second-playthrough-audio.cfg"
+			node.effects_volume = 0.0
+			node.music_volume = 0.0
+		elif node is GameDisplayManager:
+			node.preferences_path = "res://.artifact_work/second-playthrough-display.cfg"
+		elif node is CampaignNavigator:
+			node.progress_store = CampaignProgressStore.new("res://.artifact_work/second-playthrough-progress.cfg"))
 	_run.call_deferred()
 
 
@@ -43,6 +53,7 @@ func _play(order: Array[StringName]) -> void:
 	root.add_child(level)
 	_active_level = level
 	_next_maintenance = 0.5
+	_built_points.clear()
 	await _frames(4)
 	print("SECOND_LEVEL_ROUTE_START ", order)
 	for id: StringName in order:
@@ -93,32 +104,68 @@ func _play(order: Array[StringName]) -> void:
 
 func _build(level: SecondLevel, point: Vector2, retry: int = 0) -> bool:
 	var controller: CultivationInputController = level.cultivation_input_controller
-	controller.enter_remote_placement_mode()
-	var preview: Dictionary = controller.preview_remote_at(point)
-	print("SECOND_LEVEL_BUILD ", point, " valid=", preview.get("valid"), " cost=", preview.get("total_cost"),
-		" reason=", preview.get("error"), " capital=", level.mother_core.nutrition)
-	if not controller.place_remote_target(point): return false
+	if _weapon_near(point) != null:
+		return true
+	# 远程请求可能复用24px内的已有花朵。芽被毁后，应在同一花朵 C 重建，不能再 B 重叠放置。
+	var host := _host_near(point)
+	if host != null:
+		controller.select_node(host)
+		if not controller.request_cultivation(): return false
+	else:
+		controller.enter_remote_placement_mode()
+		var preview: Dictionary = controller.preview_remote_at(point)
+		print("SECOND_LEVEL_BUILD ", point, " valid=", preview.get("valid"), " cost=", preview.get("total_cost"),
+			" reason=", preview.get("error"), " capital=", level.mother_core.nutrition)
+		if not controller.place_remote_target(point): return false
 	var construction_id: String = String(level.construction_coordinator.get_snapshot().get("selected_id", ""))
 	var build_started: float = level.elapsed_seconds
 	for frame: int in range(3600):
 		if not level.get_result_snapshot().is_empty(): return false
 		if level.elapsed_seconds >= build_started + 60: break
-		for weapon: SporeWeapon in level.get_weapons():
-			if weapon.get_parent().global_position.distance_to(point) < 2.0:
-				print("SECOND_LEVEL_ORGAN_READY ", point, " time=", level.elapsed_seconds)
-				return true
+		if _weapon_near(point) != null:
+			print("SECOND_LEVEL_ORGAN_READY ", point, " time=", level.elapsed_seconds)
+			if not _built_points.has(point): _built_points.append(point)
+			return true
 		var request: Dictionary = level.construction_coordinator.get_request(construction_id)
 		if request.get("state") in [&"failed", &"cancelled"]:
 			print("SECOND_LEVEL_REBUILD ", point, " reason=", request.get("wait_reason"))
-			return await _build(level, point, retry + 1) if retry < 2 else false
+			return await _build(level, point, retry + 1) if retry < 4 else false
 		await _frames(1)
 	print("SECOND_LEVEL_BUILD_TIMEOUT ", point, " queue=", level.construction_coordinator.get_snapshot())
 	return false
 
 
+func _host_near(point: Vector2) -> HyphaNode:
+	for host: Node2D in _active_level.network_system.get_registered_nodes():
+		if host is HyphaNode and host.is_functional() and host.global_position.distance_to(point) <= CultivationInputController.OVERLAP_RADIUS:
+			return host as HyphaNode
+	return null
+
+
+func _weapon_near(point: Vector2) -> SporeWeapon:
+	for weapon: SporeWeapon in _active_level.get_weapons():
+		if weapon.get_parent().global_position.distance_to(point) <= CultivationInputController.OVERLAP_RADIUS:
+			return weapon
+	return null
+
+
+func _rebuild_lost_frontline() -> void:
+	for point: Vector2 in _built_points:
+		if _weapon_near(point) != null: continue
+		var host := _host_near(point)
+		if host == null: continue
+		var controller := _active_level.cultivation_input_controller
+		controller.select_node(host)
+		var status: Dictionary = controller.get_selection_status()
+		if status.get("can_cultivate", false) or status.get("can_continue", false):
+			controller.request_cultivation()
+			return
+
+
 func _maintain_network() -> void:
 	if not is_instance_valid(_active_level) or not _active_level.get_result_snapshot().is_empty():
 		return
+	_rebuild_lost_frontline()
 	_specialize_support()
 	if _active_level.repair_system.has_active_task(): return
 	var chosen: Node2D

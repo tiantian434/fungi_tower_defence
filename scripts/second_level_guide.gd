@@ -3,8 +3,8 @@ extends FirstEventGuide
 
 const SECOND_TEXTS: Dictionary = {
 	&"remains_returned": "回收物已送到碎纸机。向前建设时，请保护回收和补给路线。",
-	&"nutrition_returned": "创作能量已入账。两侧数位板各有80可回收能量，可支持向AI绘图终端推进。",
-	&"facility_destroyed": "这台AI绘图终端已停止生成，已出现的敌人仍会行动。其余终端至少留出20秒整备。",
+	&"nutrition_returned": "创作能量已入账。先利用两侧数位板补充能量，再向终端推进。\n前沿花朵按 C 可建炮台，炮台会攻击射程内的目标。",
+	&"facility_destroyed": "这台绘图终端已停止生成，已出现的敌人仍会行动。\n趁整备时间回收、修补花径，再推进下一处目标。",
 	&"silk_gnawer": "侵蚀大脑·断线型只直接攻击花径。保护运输路线，及时修复，或连接另一条道路。",
 	&"junction_gnawer": "侵蚀大脑·摧花型只直接攻击花朵。保护节点，避免节点受损影响其上的设施。",
 	&"swarm": "拼贴面孔正在成群靠近。进入成形阶段后，可把铅笔炮台改装为喷漆炮台，一轮拦截多个目标。",
@@ -12,12 +12,5 @@ const SECOND_TEXTS: Dictionary = {
 }
 
 
-func record_event(event_id: StringName, _facts: Dictionary = {}) -> void:
-	if not SECOND_TEXTS.has(event_id) or _seen.has(event_id):
-		return
-	_seen[event_id] = true
-	_seen_order.append(event_id)
-	if is_enabled:
-		_pending.append({"id": event_id, "text": String(SECOND_TEXTS[event_id])})
-		_show_next()
-	_publish()
+func _event_text(event_id: StringName) -> String:
+	return String(SECOND_TEXTS[event_id]) if SECOND_TEXTS.has(event_id) else super._event_text(event_id)

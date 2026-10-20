@@ -7,6 +7,15 @@ var checks: int = 0
 var settlements: int = 0
 
 func _initialize() -> void:
+	node_added.connect(func(node: Node) -> void:
+		if node is GameAudio:
+			node.preferences_path = "res://.artifact_work/stage11_integration_test-audio.cfg"
+			node.effects_volume = 0.0
+			node.music_volume = 0.0
+		elif node is GameDisplayManager:
+			node.preferences_path = "res://.artifact_work/stage11_integration_test-display.cfg"
+		elif node is CampaignNavigator:
+			node.progress_store = CampaignProgressStore.new("res://.artifact_work/stage11_integration_test-progress.cfg"))
 	_run.call_deferred()
 
 func _run() -> void:
@@ -56,15 +65,15 @@ func _run() -> void:
 	level = current_scene as FirstLevel
 	_check(_is_clean(), "restart during battle clears enemies and counters")
 	await _finish_fixture(false, false)
-	_check(bool(level.get_result_snapshot().get("victory", false)), "six real batch identities create one victory")
-	_check(level.get_result_snapshot().get("total_defeated") == 66, "victory reports exactly66")
-	_check(level.get_result_snapshot().get("completed_waves") == 6, "six waves completed")
+	_check(bool(level.get_result_snapshot().get("victory", false)), "three real batch identities create one victory")
+	_check(level.get_result_snapshot().get("total_defeated") == level.wave_flow.get_planned_total(), "victory reports current editable plan")
+	_check(level.get_result_snapshot().get("completed_waves") == FirstLevelFlow.WAVE_TOTAL, "three waves completed")
 	_check(level.get_result_snapshot().get("resources", {}).get("balanced", false), "end snapshot balanced before cleanup")
 	var result: Dictionary = level.get_result_snapshot()
 	level._resolve_result()
 	await _frames(4)
 	_check(level.get_result_snapshot() == result and settlements == 1, "terminal repeated callbacks settle once")
-	_check(not level.start_next_wave(), "no seventh wave")
+	_check(not level.start_next_wave(), "no fourth wave")
 	level.restart_level()
 	await _frames(5)
 	level = current_scene as FirstLevel
@@ -106,12 +115,12 @@ func _finish_fixture(fail_same_frame: bool, core_first: bool) -> void:
 		fixture_waves.append(fixture)
 	level.wave_flow.waves = fixture_waves
 	level.level_finished.connect(func(_snapshot: Dictionary) -> void: settlements += 1)
-	for wave_number: int in range(1, 7):
+	for wave_number: int in range(1, FirstLevelFlow.WAVE_TOTAL + 1):
 		_check(level.start_next_wave(), "fixture starts wave%d" % wave_number)
 		var nutrition_before: int = level.mother_core.nutrition
 		for _frame: int in range(300):
 			var batch: Dictionary = level.enemy_spawner.get_batch_snapshot()
-			var final_enemy: bool = wave_number == 6 and batch.unspawned == 0 and batch.active == 1
+			var final_enemy: bool = wave_number == FirstLevelFlow.WAVE_TOTAL and batch.unspawned == 0 and batch.active == 1
 			for child: Node in level.get_node("World/Enemies").get_children():
 				if child is BasicEnemy and child.is_alive():
 					if fail_same_frame and core_first and final_enemy:
@@ -122,7 +131,7 @@ func _finish_fixture(fail_same_frame: bool, core_first: bool) -> void:
 			await _frames(1)
 			if level.wave_flow.get_snapshot().state != "fighting":
 				break
-		if wave_number < 6:
+		if wave_number < FirstLevelFlow.WAVE_TOTAL:
 			_check(level.wave_flow.get_snapshot().state == "preparation", "normal clear only prepares wave%d" % wave_number)
 			_check(level.mother_core.nutrition == nutrition_before, "wave boundary does not reset or grant nutrition")
 			if wave_number == 1:

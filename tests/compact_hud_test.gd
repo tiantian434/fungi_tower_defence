@@ -8,6 +8,13 @@ var failures: Array[String] = []
 
 
 func _initialize() -> void:
+	node_added.connect(func(node: Node) -> void:
+		if node is GameAudio:
+			node.preferences_path = "user://compact_hud_audio_test.cfg"
+		if node is GameDisplayManager:
+			node.preferences_path = "user://compact_hud_display_test.cfg")
+	var display := root.get_node_or_null("GameDisplay") as GameDisplayManager
+	if display != null: display.preferences_path = "user://compact_hud_display_test.cfg"
 	_run.call_deferred()
 
 
@@ -15,6 +22,7 @@ func _run() -> void:
 	await _fresh()
 	var ui: CompactColonyHUD = level.compact_hud
 	_check(ui.active_page == &"" and not ui.drawer.visible, "details start collapsed")
+	_check(not ui.pages.has(&"development"), "release HUD hides development demos by default")
 	_check(not level.flow_hud.flow_panel.visible and not level.flow_hud.colony_panel.visible,
 		"old summary panels are hidden")
 	_check(level.construction_queue_controller.is_visible_in_tree()
@@ -166,10 +174,14 @@ func _run() -> void:
 			level.pause_controller.set_paused(true)
 		_key(KEY_F5 + index)
 		await _frames(5)
+		_check(current_scene == level, "default formal game rejects developer shortcut F%d" % (5 + index))
+		level.development_shortcuts_enabled = true
+		_key(KEY_F5 + index)
+		await _frames(5)
 		var paths: Array[String] = ["large_carcass_demo", "traffic_recovery_demo", "progression_demo",
 			"combat_specialization_demo", "terrain_threat_demo", "colony_operations_demo"]
 		_check(current_scene.scene_file_path.ends_with(paths[index] + ".tscn") and not paused,
-			"developer shortcut and pause cleanup: F%d" % (5 + index))
+			"explicit developer shortcut and pause cleanup: F%d" % (5 + index))
 	if is_instance_valid(current_scene):
 		current_scene.queue_free()
 	await _frames(3)

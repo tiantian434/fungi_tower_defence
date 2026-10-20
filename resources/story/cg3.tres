@@ -14,8 +14,8 @@ title = "学着接纳"
 layers = Array[Texture2D]([ExtResource("tex0")])
 scene_id = &"acceptance"
 grain = 0.012
-caption = "再怎么怨恨也没有用。"
-seconds = 3.5
+caption = "需要安静下来的，不是所有工具，而是“我的画毫无价值”的声音。"
+seconds = 7.0
 
 [sub_resource type="Resource" id="Shot_01"]
 script = ExtResource("shot")
@@ -23,9 +23,9 @@ title = "学着接纳"
 layers = Array[Texture2D]([ExtResource("tex0")])
 scene_id = &"acceptance"
 grain = 0.012
-caption = "既然 AI 的发展是必然趋势，我也开始学着接纳 AI，在简历上写着“擅长 AI 协作”。"
-seconds = 9.0
-animation_offset = 3.5
+caption = "我开始学习新的工具，也试着把选择权握回自己手中。"
+seconds = 6.5
+animation_offset = 7.0
 
 [sub_resource type="Resource" id="Shot_02"]
 script = ExtResource("shot")
@@ -33,9 +33,9 @@ title = "学着接纳"
 layers = Array[Texture2D]([ExtResource("tex0")])
 scene_id = &"acceptance"
 grain = 0.012
-caption = "我想，这也是一种成长。"
-seconds = 3.5
-animation_offset = 12.5
+caption = "但会使用工具，不等于知道自己想画什么。"
+seconds = 5.0
+animation_offset = 13.5
 
 [sub_resource type="Resource" id="Shot_03"]
 script = ExtResource("shot")

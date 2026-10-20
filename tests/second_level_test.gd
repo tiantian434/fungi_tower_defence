@@ -7,11 +7,21 @@ var failures: Array[String] = []
 
 
 func _initialize() -> void:
+	node_added.connect(func(node: Node) -> void:
+		if node is GameAudio:
+			node.preferences_path = "res://.artifact_work/second_level_test-audio.cfg"
+			node.effects_volume = 0.0
+			node.music_volume = 0.0
+		elif node is GameDisplayManager:
+			node.preferences_path = "res://.artifact_work/second_level_test-display.cfg"
+		elif node is CampaignNavigator:
+			node.progress_store = CampaignProgressStore.new("res://.artifact_work/second_level_test-progress.cfg"))
 	_run.call_deferred()
 
 
 func _run() -> void:
 	await _initial_and_real_attack()
+	await _staggered_opening()
 	await _production_and_targets()
 	await _death_priority(false)
 	await _death_priority(true)
@@ -124,6 +134,31 @@ func _initial_and_real_attack() -> void:
 	await _dispose(level)
 
 
+func _staggered_opening() -> void:
+	var profile := preload("res://resources/ai/second_level_production.tres") as AIProductionProfile
+	_check(profile.get_initial_delay(0) == 30.0 and profile.get_initial_delay(1) == 50.0 \
+			and profile.get_initial_delay(2) == 70.0, "first pressure is one source, followed by two readable twenty-second offsets")
+	_check(profile.advanced_after_seconds >= 90.0 and profile.full_after_seconds >= 180.0,
+		"swarm and special pressure leave a normal-enemy opening for real recovery and upgrades")
+	var invalid: AIProductionProfile = profile.duplicate(true) as AIProductionProfile
+	invalid.source_activation_interval_seconds = -1.0
+	_check(not invalid.is_valid(), "source timing rejects a negative interval")
+	invalid.source_activation_interval_seconds = NAN
+	_check(not invalid.is_valid(), "source timing rejects a non-finite interval")
+	var level: SecondLevel = await _fresh()
+	var producer := level.wave_flow
+	_check(level.start_next_wave(), "player can skip the shared preparation")
+	_check(float(producer._sources[&"left"].remaining) <= 0.01 \
+			and is_equal_approx(float(producer._sources[&"center"].remaining), 20.0) \
+			and is_equal_approx(float(producer._sources[&"right"].remaining), 40.0),
+		"skipping preparation preserves source offsets instead of starting all three facilities")
+	await _frames(3)
+	_check(int(producer._sources[&"left"].cycles) == 1 \
+			and int(producer._sources[&"center"].cycles) == 0 and int(producer._sources[&"right"].cycles) == 0,
+		"only the first terminal starts during the early-start opening")
+	await _dispose(level)
+
+
 func _production_and_targets() -> void:
 	var level: SecondLevel = await _fresh()
 	var producer: AIProductionController = level.wave_flow
@@ -132,6 +167,9 @@ func _production_and_targets() -> void:
 	producer.profile.member_interval = 0.8
 	producer.profile.destruction_grace_seconds = 0.1
 	producer.profile.max_alive_per_source = 18
+	# 这一生命周期夹具需要三个源同时启动；正式错峰另由 _staggered_opening 验证。
+	for record: Dictionary in producer._sources.values():
+		record.remaining = producer.profile.preparation_seconds - producer.elapsed_seconds
 	producer.enemy_created.connect(func(enemy: BasicEnemy) -> void: enemy.move_speed = 0.0)
 	_check(level.start_next_wave(), "initial preparation may be ended through the existing start intent")
 	_check(not level.start_next_wave(), "repeated start intent cannot repeat initial preparation")

@@ -36,12 +36,12 @@ position = Vector2(0, 0)
 
 [node name="FirstCarcass" parent="World/Remains"]
 position = Vector2(250, 335)
-total_nutrition = 80
+total_nutrition = 60
 batch_size = 10
 
 [node name="SecondCarcass" parent="World/Remains"]
 position = Vector2(1005, 330)
-total_nutrition = 120
+total_nutrition = 60
 batch_size = 10
 
 [node name="East" parent="World/SpawnPoints"]
@@ -89,7 +89,7 @@ offset_top = 112.0
 offset_right = 108.0
 offset_bottom = 176.0
 theme_override_fonts/font = SubResource("Font_map")
-text = "① 左前画架 · 80能量 · 先向十字伸展\n接通后每批回收10能量"
+text = "① 左前画架 · 60能量 · 先向十字伸展\n回收后可同时引导两条花径"
 
 [node name="SecondResourceGuide" parent="World"]
 z_index = 6
@@ -101,7 +101,7 @@ offset_top = 162.0
 offset_right = 259.0
 offset_bottom = 226.0
 theme_override_fonts/font = SubResource("Font_map")
-text = "② 右前画架 · 120能量 · 留意侧入口\n向十字伸展，保护回运路线"
+text = "② 右前画架 · 60能量 · 留意侧入口\n在这里建炮台，保护回运路线"
 
 [node name="TerrainNavigation" parent="World"]
 bounds = Rect2(16, 258, 1168, 362)

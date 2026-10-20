@@ -209,14 +209,13 @@ func _open_third_level() -> void:
 		return
 	_restart_pending = true
 	pause_controller.reset()
-	var player := StoryPlayer.open(self, 3)
-	player.finished.connect(func() -> void:
-		get_tree().change_scene_to_file("res://scenes/levels/third_level.tscn"))
+	if not CampaignNavigator.ensure(get_tree()).launch_level(3):
+		_restart_pending = false
 
 
 func _on_facility_destroyed(_id: StringName) -> void:
 	first_guide.record_event(&"facility_destroyed")
-	hud.show_notice("AI绘图终端已摧毁，永久停止该终端的后续生成；仍需防守已出现的敌人。")
+	hud.show_notice("一处评价终端已关闭，创作的空间正在回来；仍需防守已出现的敌人。")
 
 
 func _on_enemy_created(enemy: BasicEnemy) -> void:

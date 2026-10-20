@@ -170,7 +170,7 @@ func _toggle_play() -> void:
 	playing = not playing
 	if not sequence.music_id.is_empty():
 		_audio.pause_music(not playing)
-	_play.text = "暂停播放" if playing else "自动播放"
+	_play.text = "等待继续" if frame_index >= sequence.get_count() - 1 else ("暂停播放" if playing else "自动播放")
 
 func advance() -> void:
 	if _finished:
@@ -218,8 +218,10 @@ func _refresh() -> void:
 	_counter.text = "%02d / %02d" % [frame_index + 1, sequence.get_count()]
 	if not has_shots and sequence.frames.is_empty():
 		_counter.text = "剧情占位 · 美术图片待替换 · Space 继续 · Esc 跳过"
-	_next.text = "继续" if frame_index >= sequence.get_count() - 1 else "下一幕"
-	_play.disabled = sequence.get_count() < 2
+	var last_frame: bool = frame_index >= sequence.get_count() - 1
+	_next.text = ("查看通关记录 · Space" if sequence.resource_path.ends_with("cg4.tres") else "进入关卡 · Space") if last_frame else "下一幕"
+	_play.text = "等待继续" if last_frame else ("暂停播放" if playing else "自动播放")
+	_play.disabled = sequence.get_count() < 2 or last_frame
 	_previous.disabled = frame_index == 0
 	_previous.tooltip_text = "← 上一幕"
 	_next.tooltip_text = "Space 下一幕或继续"

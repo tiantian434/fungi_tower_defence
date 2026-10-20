@@ -15,7 +15,7 @@ const FLOW_NAMES: Dictionary = {
 	&"interrupted": "关卡中断",
 	&"stopped": "已停止",
 }
-const WAVE_TOTAL: int = 6
+const WAVE_TOTAL: int = FirstLevelFlow.WAVE_TOTAL
 
 var _flow_snapshot: Dictionary = {}
 var _colony_snapshot: Dictionary = {}
@@ -170,10 +170,9 @@ func _render_flow() -> void:
 		int(_flow_snapshot.get("planned", 0)), int(_flow_snapshot.get("unspawned", 0)),
 	]
 	if completed >= total or state == &"victory_candidate":
-		next_label.text = "六波已清空，正在核验结果。" if not _has_result else "本次结算已生成。"
+		next_label.text = "三波已清空，正在核验结果。" if not _has_result else "本次结算已生成。"
 	elif wave_index == total and state == &"fighting":
-		next_label.text = "最后一波 · 清空全部计划敌人后结算。
-没有第七波。"
+		next_label.text = "最后一波 · 守住花径，清空来敌后结算。"
 	elif state in [&"interrupted", &"stopped"]:
 		next_label.text = "本次流程已结束。\n可重开并回到初始准备。"
 	else:
@@ -215,7 +214,7 @@ func _render_result() -> void:
 	var victory: bool = bool(_result_snapshot.get("victory", false))
 	result_title.text = "守住画中的世界 · 第一章完成" if victory else "小画家倒下了 · 本次挑战失败"
 	result_title.modulate = Color.WHITE
-	result_subtitle.text = "六波均已清空 · 本局数据如下" if victory else "回到初始准备，调整布局后再次挑战"
+	result_subtitle.text = "三波均已清空 · 本局数据如下" if victory else "回到初始准备，调整布局后再次挑战"
 	result_left_label.text = "到达波次：%d / %d\n完成波次：%d / %d\n累计回收：%d 创作能量\n创作阶段：%s" % [
 		int(_result_snapshot.get("reached_wave", 0)), WAVE_TOTAL,
 		int(_result_snapshot.get("completed_waves", 0)), WAVE_TOTAL,

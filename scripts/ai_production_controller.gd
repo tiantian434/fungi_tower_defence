@@ -41,13 +41,13 @@ func configure(level: ColonyLevelRuntime, facilities: Array[AIFacility]) -> void
 			_stopped = true
 			_sources.clear()
 			return
-		_sources[facility.facility_id] = {"facility": facility, "remaining": profile.preparation_seconds,
+		_sources[facility.facility_id] = {"facility": facility, "remaining": profile.get_initial_delay(_sources.size()),
 			"cycles": 0, "index": _sources.size(), "phase": &"preparing"}
 	for id: StringName in _sources:
 		var facility: Variant = _sources[id].facility
 		facility.facility_destroyed.connect(_on_facility_destroyed)
 		facility.tree_exiting.connect(_on_facility_exiting.bind(id))
-		facility.set_production_state(&"preparing", profile.preparation_seconds)
+		facility.set_production_state(&"preparing", float(_sources[id].remaining))
 	_configured = true
 	changed.emit(get_snapshot())
 
@@ -90,8 +90,10 @@ func begin_attack() -> bool:
 	for record: Dictionary in _sources.values():
 		if int(record.cycles) > 0:
 			return false
+	# 只结束共同的准备时间，保留其他终端的启动间隔。
+	var skipped: float = maxf(0.0, profile.preparation_seconds - elapsed_seconds)
 	for record: Dictionary in _sources.values():
-		record.remaining = 0.0
+		record.remaining = maxf(0.0, float(record.remaining) - skipped)
 	_preparation_skipped = true
 	return true
 

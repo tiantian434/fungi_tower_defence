@@ -18,6 +18,8 @@ const REMNANT_DASH_STEPS: int = 48
 const REMNANT_DASH_RATIO: float = 0.55
 
 @export var flower_textures: Array[Texture2D] = []
+## 通关成画只展示花簇；覆盖和采集规则仍使用同一份真实来源快照。
+var presentation_mode: bool = false
 
 @export var core_radius: float = 140.0:
 	set(value):
@@ -65,6 +67,9 @@ func _draw() -> void:
 
 	# 抵消本节点及其父节点的变换，让圆半径和线宽始终使用世界像素。
 	draw_set_transform_matrix(_get_world_draw_transform())
+	if presentation_mode:
+		_draw_flowers(_get_draw_discs())
+		return
 	# 灰色虚线及叉号从断连瞬间出现；有效覆盖的不透明填充始终画在上层。
 	_draw_remnants(_get_remnant_discs())
 	var discs: Array[Dictionary] = _get_draw_discs()

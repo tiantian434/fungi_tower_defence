@@ -8,28 +8,41 @@
 [sub_resource type="Resource" id="Entry_01"]
 script = ExtResource("2_entry")
 enemy_scene = ExtResource("scene_normal")
-group_count = 3
-group_interval = 6.0
+group_count = 2
+group_size = 1
+group_interval = 2.2
 spawn_point_index = 0
 
 [sub_resource type="Resource" id="Entry_02"]
 script = ExtResource("2_entry")
 enemy_scene = ExtResource("scene_swarm")
+group_count = 2
 group_size = 2
-group_interval = 6.0
+group_interval = 2.2
+spawn_point_index = 1
 member_interval = 0.25
 member_spacing = 22.0
-spawn_point_index = 1
 
 [sub_resource type="Resource" id="Entry_03"]
 script = ExtResource("2_entry")
 enemy_scene = ExtResource("scene_normal")
-group_count = 3
-group_interval = 6.0
+group_count = 2
+group_size = 1
+group_interval = 2.2
 spawn_point_index = 0
+
+[sub_resource type="Resource" id="Entry_04"]
+script = ExtResource("2_entry")
+enemy_scene = ExtResource("scene_swarm")
+group_count = 2
+group_size = 2
+group_interval = 2.2
+spawn_point_index = 1
+member_interval = 0.25
+member_spacing = 22.0
 
 [resource]
 script = ExtResource("1_wave")
-entries = Array[ExtResource("2_entry")]([SubResource("Entry_01"), SubResource("Entry_02"), SubResource("Entry_03")])
-title = "第二波 · 侧前骚动"
-direction_text = "涂鸦羊从正面推进，小涂鸦羊群从侧前方插入。"
+entries = Array[ExtResource("2_entry")]([SubResource("Entry_01"), SubResource("Entry_02"), SubResource("Entry_03"), SubResource("Entry_04")])
+title = "第二波 · 花径向两侧展开"
+direction_text = "侧面羊群加入。保护右侧画架，累计回收160后可改装炮台。"

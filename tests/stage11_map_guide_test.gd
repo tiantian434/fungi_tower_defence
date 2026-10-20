@@ -53,7 +53,8 @@ func _run() -> void:
 	_test_paid_expansions_and_bypass()
 	_test_first_events_and_snapshot_isolation()
 	_test_disable_reset_and_paused_buttons()
-	_check(root.get_child_count() == 0, "Map and guide fixtures leave no scene nodes")
+	_check(root.get_children().filter(func(node: Node) -> bool: return not node is GameDisplayManager).is_empty(),
+		"Map and guide fixtures leave no scene nodes")
 	print("STAGE11_MAP_GUIDE_TEST_RESULT ", JSON.stringify({
 		"checks": checks, "failures": failures, "evidence": evidence,
 		"fixture_scope": "offline_map; production_growth_with_direct_paid_delivery; independent_guide",
@@ -111,9 +112,9 @@ func _test_map_geometry_and_initial_state() -> void:
 		if is_instance_valid(edge.start_node) and is_instance_valid(edge.end_node):
 			_check(terrain.is_segment_clear(edge.start_node.position, edge.end_node.position, 10.0),
 				"All four base edges clear fixed rocks")
-	_check(first.total_nutrition == 80 and second.total_nutrition == 120 \
+	_check(first.total_nutrition == 60 and second.total_nutrition == 60 \
 		and first.position.x < core.position.x and second.position.x > core.position.x,
-		"FirstCarcass80 stays on the left and SecondCarcass120 stays on the right")
+		"Two sixty-unit sources require real combat income to unlock the mature stage")
 	_check((map.get_node("World/FirstResourceGuide") as Node2D).position == FIRST_TARGET \
 		and (map.get_node("World/SecondResourceGuide") as Node2D).position == SECOND_TARGET,
 		"Both visible cross markers use the formal recommended targets")
@@ -133,9 +134,9 @@ func _test_map_geometry_and_initial_state() -> void:
 	var second_plan: Dictionary = planner.plan(right.position, SECOND_TARGET)
 	_check(bool(first_plan["valid"]) and (first_plan["segments"] as Array).size() <= 2 \
 		and int(first_plan["total_cost"]) > 0 and int(first_plan["total_cost"]) <= 12,
-		"The early80 target takes one or two paid main segments from the left organ")
+		"The early60 target takes one or two paid main segments from the left organ")
 	_check(bool(second_plan["valid"]) and float(second_plan["distance"]) > float(first_plan["distance"]),
-		"The right120 expansion has a longer paid route even when rounded costs tie")
+		"The right60 expansion has a longer paid route even when rounded costs tie")
 	var points: Node2D = map.get_node("World/SpawnPoints") as Node2D
 	var front: Node2D = points.get_child(0) as Node2D
 	var side: Node2D = points.get_child(1) as Node2D
@@ -147,7 +148,7 @@ func _test_map_geometry_and_initial_state() -> void:
 	_check(front.has_node("EntryLabel") and side.has_node("EntryLabel"),
 		"Exactly the two formal entries have visible direction labels")
 	_check(side.position.distance_to(SECOND_TARGET) < side.position.distance_to(FIRST_TARGET),
-		"The higher120 target is exposed to the side entry")
+		"The right60 target is exposed to the side entry")
 	for entry: Node2D in [front, side]:
 		var path: PackedVector2Array = terrain.find_path(entry.position, core.position, 10.0)
 		_check(path.size() >= 2 and path[0] == entry.position and path[-1] == core.position,
@@ -322,12 +323,12 @@ func _test_first_events_and_snapshot_isolation() -> void:
 	for event_id: StringName in EVENT_IDS:
 		guide.record_event(event_id, facts)
 	_check(facts == original_facts, "The guide does not mutate supplied event facts")
-	_check(guide.get_snapshot()["current_event"] == EVENT_IDS[0] \
+	_check(guide.get_snapshot()["current_event"] == &"network_broken" \
 		and (guide.get_snapshot()["seen"] as Array).size() == 6,
-		"Six distinct first events queue without replacing the active hint")
+		"The newest urgent context replaces obsolete first-step instructions")
 	var count_before: int = notifications.size()
 	for event_id: StringName in EVENT_IDS:
-		guide.record_event(event_id)
+		guide.record_event(event_id, facts)
 	_check(notifications.size() == count_before, "Repeated gameplay events do not enqueue hints or emit redundant screens")
 	var snapshot: Dictionary = guide.get_snapshot()
 	(snapshot["seen"] as Array).clear()
@@ -335,14 +336,14 @@ func _test_first_events_and_snapshot_isolation() -> void:
 	_check((guide.get_snapshot()["seen"] as Array).size() == 6 \
 		and guide.get_snapshot()["text"] != "changed outside",
 		"Returned snapshots cannot change the guide's occurrence records or message")
-	for event_id: StringName in EVENT_IDS:
-		_check(guide.get_snapshot()["current_event"] == event_id and bool(guide.get_snapshot()["visible"]),
-			"Queued first events appear once in arrival order")
-		if event_id == &"stage_unlocked":
-			_check(String(guide.get_snapshot()["text"]).contains("展开"), "The unlock hint can name the supplied real stage")
-		guide.dismiss_current()
+	var shown: int = 0
+	while bool(guide.get_snapshot()["visible"]) and shown < 8:
+		guide.advance(30.0)
+		shown += 1
 	_check(not bool(guide.get_snapshot()["visible"]) and guide.get_snapshot()["current_event"] == &"",
-		"Dismissing all first events leaves no repeated screen")
+		"Automatic advance drains the bounded context queue without opening help")
+	guide.record_event(&"stage_unlocked", {"stage_name": "成形"})
+	_check(guide.get_snapshot()["text"].contains("炮台改装"), "A second real stage has its own actionable announcement")
 	guide.free()
 
 
@@ -356,12 +357,14 @@ func _test_disable_reset_and_paused_buttons() -> void:
 		"First event UI remains usable while paused and never takes keyboard focus")
 	guide.record_event(&"target_placed")
 	guide.record_event(&"remains_returned")
+	_check(guide.get_snapshot()["current_event"] == &"remains_returned",
+		"Actual return supersedes the old target-placement instruction")
 	paused = true
 	_check(guide.can_process() and dismiss.can_process() and toggle.can_process(),
 		"Hint controls inherit always processing during a game pause")
 	dismiss.pressed.emit()
-	_check(guide.get_snapshot()["current_event"] == &"remains_returned",
-		"The actual dismiss button advances the queue during pause")
+	_check(not bool(guide.get_snapshot()["visible"]),
+		"The actual dismiss button closes the contextual message during pause")
 	toggle.toggled.emit(false)
 	_check(not bool(guide.get_snapshot()["enabled"]) and not bool(guide.get_snapshot()["visible"]) \
 		and not panel.visible and toggle.visible,

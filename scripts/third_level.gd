@@ -141,6 +141,34 @@ func get_fragment_targets() -> Array[MemoryFragment]:
 	return fragments
 
 
+## 世界已在终局冻结。只收起战斗标记，保留玩家创造的花海和真实网络。
+func prepare_painting_view() -> void:
+	hud.hide()
+	for path: String in ["World/Enemies", "World/Projectiles", "World/GrowthTargets", "World/FrontierStatus",
+			"World/Remains", "World/TerrainNavigation"]:
+		var item := get_node_or_null(path) as CanvasItem
+		if is_instance_valid(item):
+			item.hide()
+	_objective_overlay.hide()
+	map_boundary.hide()
+	fungal_field.presentation_mode = true
+	fungal_field.queue_redraw()
+	for item: Node in $World/Colony.find_children("*", "Control", true, false):
+		(item as Control).hide()
+	for fragment: MemoryFragment in get_fragment_targets():
+		fragment.hide()
+	colony_camera.clear_input_state()
+	_on_camera_view_changed()
+
+
+func get_painting_bounds() -> Rect2:
+	var bounds := Rect2(mother_core.global_position - Vector2.ONE, Vector2.ONE * 2)
+	for node: Node2D in network_system.get_registered_nodes():
+		if is_instance_valid(node) and not node.is_queued_for_deletion():
+			bounds = bounds.expand(node.global_position)
+	return bounds.grow(105)
+
+
 func get_objective_caption() -> String:
 	return "收集碎片 %d/3" % fragment_collection.collected_ids.size()
 

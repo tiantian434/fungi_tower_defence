@@ -51,7 +51,7 @@ func _store_checks() -> void:
 	_check(reload.get_snapshot().highest_unlocked == 3, "returned progress dictionary is detached")
 	var config := ConfigFile.new()
 	config.load(STORE_SAVE)
-	_check(config.get_section_keys("campaign").size() == 4 and not config.has_section_key("campaign", "nutrition"), "progress stores no in-level resources or network")
+	_check(config.get_section_keys("campaign").size() == 5 and not config.has_section_key("campaign", "nutrition"), "progress stores only chapter and seen-story progress, no in-level resources or network")
 	config.set_value("campaign", "continue_level", 99)
 	config.save(STORE_SAVE)
 	_check(not reload.load_progress() and not reload.get_snapshot().has_save and not reload.last_error.is_empty(), "corrupt chapter indices disable continue safely")
@@ -158,6 +158,9 @@ func _unlock_second() -> void:
 	await _frames(5)
 	_check(current_scene.progress_label.text.contains("第二关"), "title identifies the actual continue chapter")
 	_click(current_scene.continue_button.get_global_rect().get_center())
+	await _frames(5)
+	_check(get_nodes_in_group("story_players").size() == 1, "returning to title before chapter transition preserves unseen CG2")
+	for player: StoryPlayer in get_nodes_in_group("story_players"): player.finish()
 	await _frames(5)
 	_check(current_scene is SecondLevel and current_scene.mother_core.nutrition == 90, "continue loads second with its own initial capital")
 
