@@ -1,0 +1,38 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/event_guide_card.gd" id="1_card"]
+
+[node name="EventGuideCard" type="PanelContainer"]
+visible = false
+custom_minimum_size = Vector2(0, 156)
+offset_right = 560.0
+offset_bottom = 140.0
+mouse_filter = 0
+script = ExtResource("1_card")
+
+[node name="Content" type="VBoxContainer" parent="."]
+layout_mode = 2
+theme_override_constants/separation = 5
+
+[node name="Header" type="HBoxContainer" parent="Content"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Content/Header"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+text = "下一笔"
+
+[node name="Dismiss" type="Button" parent="Content/Header"]
+custom_minimum_size = Vector2(86, 34)
+layout_mode = 2
+focus_mode = 0
+text = "知道了"
+tooltip_text = "关闭当前提示；后续提示会自动出现"
+
+[node name="Message" type="Label" parent="Content"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+autowrap_mode = 3
+text = ""

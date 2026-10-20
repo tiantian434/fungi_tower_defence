@@ -7,6 +7,15 @@ var failures: Array[String] = []
 
 
 func _initialize() -> void:
+	node_added.connect(func(node: Node) -> void:
+		if node is GameAudio:
+			node.preferences_path = "res://.artifact_work/second_level_test-audio.cfg"
+			node.effects_volume = 0.0
+			node.music_volume = 0.0
+		elif node is GameDisplayManager:
+			node.preferences_path = "res://.artifact_work/second_level_test-display.cfg"
+		elif node is CampaignNavigator:
+			node.progress_store = CampaignProgressStore.new("res://.artifact_work/second_level_test-progress.cfg"))
 	_run.call_deferred()
 
 
@@ -58,6 +67,8 @@ func _initial_and_real_attack() -> void:
 			and level.wave_flow.profile.cycle_seconds == configured.cycle_seconds,
 		"production uses an isolated copy of the current editable second-level timing configuration")
 	_check(level.wave_flow.profile.destruction_grace_seconds == 45, "destruction provides at least forty-five seconds to rebuild and advance")
+	_check(level.wave_flow.profile.destruction_grace_seconds >= level.wave_flow.profile.cycle_seconds,
+		"destruction grants at least one full production cycle to move the frontier")
 	_check(level.get_facility_targets().map(func(ai: AIFacility) -> int: return ai.health) == [84, 108, 132],
 		"three stable facilities retain their independent initial health")
 	for facility: AIFacility in level.get_facility_targets():
@@ -137,6 +148,9 @@ func _initial_and_real_attack() -> void:
 
 
 func _staggered_start_and_grace() -> void:
+	var configured := preload("res://resources/ai/second_level_production.tres") as AIProductionProfile
+	_check(configured.get_initial_delay(0) == 30.0 and configured.get_initial_delay(1) == 36.0
+		and configured.get_initial_delay(2) == 42.0, "shared delay API agrees with the saved six-second entrance offsets")
 	var level: SecondLevel = await _fresh()
 	var producer: AIProductionController = level.wave_flow
 	var left: Dictionary = producer._sources[&"left"]
@@ -151,8 +165,8 @@ func _staggered_start_and_grace() -> void:
 		and producer.profile.get_scenes_for_cycle(240, 0, 0).size() == 4,
 		"small enemies begin at 120 seconds and mixed heavy pressure at 240 seconds")
 	_check(producer.profile.max_alive_per_source == 6, "three intact sources allow at most 18 live or pending enemies")
-	_check(level.start_next_wave() and left.remaining == 0.0
-		and center.remaining == 6.0 and right.remaining == 12.0,
+	_check(level.start_next_wave() and is_zero_approx(float(left.remaining))
+		and is_equal_approx(float(center.remaining), 6.0) and is_equal_approx(float(right.remaining), 12.0),
 		"early start removes preparation while retaining entrance offsets")
 	# Only advance production in this timing fixture; normal playthrough covers the full simulation clock.
 	producer._process(0.01)
@@ -169,6 +183,8 @@ func _staggered_start_and_grace() -> void:
 	var profile: AIProductionProfile = producer.profile.duplicate(true)
 	profile.source_stagger_seconds = -1.0
 	_check(not profile.is_valid(), "negative source offsets are rejected")
+	profile.source_stagger_seconds = NAN
+	_check(not profile.is_valid(), "NaN source offsets are rejected")
 	profile.source_stagger_seconds = INF
 	_check(not profile.is_valid(), "nonfinite source offsets are rejected")
 	await _dispose(level)
@@ -192,6 +208,10 @@ func _production_and_targets() -> void:
 	producer.profile.normal_count = 2
 	producer.profile.member_interval = 0.8
 	producer.profile.destruction_grace_seconds = 0.1
+	producer.profile.max_alive_per_source = 18
+	# 这一生命周期夹具需要三个源同时启动；正式错峰另由 _staggered_start_and_grace 验证。
+	for record: Dictionary in producer._sources.values():
+		record.remaining = producer.profile.preparation_seconds - producer.elapsed_seconds
 	producer.enemy_created.connect(func(enemy: BasicEnemy) -> void: enemy.move_speed = 0.0)
 	_check(level.start_next_wave(), "initial preparation may be ended through the existing start intent")
 	_check(not level.start_next_wave(), "repeated start intent cannot repeat initial preparation")

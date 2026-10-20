@@ -40,6 +40,7 @@ func _initialize() -> void:
 
 
 func _run() -> void:
+	var initial_root_children: int = root.get_child_count()
 	await _test_core_reservations()
 	await _test_priority_and_income_race()
 	await _test_existing_paid_supply()
@@ -52,7 +53,7 @@ func _run() -> void:
 	await _test_source_reference_change()
 	await _test_reset_and_old_callbacks()
 	await _test_zero_segment_delivery()
-	_check(root.get_child_count() == 0, "All repair supply fixtures leave the tree")
+	_check(root.get_child_count() == initial_root_children, "All repair supply fixtures leave the tree")
 	print("REPAIR_SUPPLY_TEST_RESULT ", JSON.stringify({
 		"runtime": "EXECUTED", "status": "PASS" if failures.is_empty() else "FAIL",
 		"checks": checks, "failures": failures, "cases": cases,

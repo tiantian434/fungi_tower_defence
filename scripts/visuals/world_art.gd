@@ -30,8 +30,8 @@ func _style_label(reference: WeakRef) -> void:
 		return
 	if label.get_parent().name == &"ArmorHint":
 		return
-	# 世界标签保留紧凑布局，但手写字体需要至少15px才能看清。
-	ArtUI.typography(label, maxi(15, label.get_theme_font_size("font_size")))
+	# 768p下画布会整体缩小，世界标签仍需保留足够清晰的手写字形。
+	ArtUI.typography(label, maxi(18, label.get_theme_font_size("font_size")))
 	label.add_theme_color_override("font_color", ArtUI.INK)
 	label.add_theme_color_override("font_outline_color", Color("f4efdf"))
 	label.add_theme_constant_override("outline_size", 3)

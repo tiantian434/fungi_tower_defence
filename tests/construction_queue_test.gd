@@ -19,6 +19,7 @@ func _initialize() -> void:
 
 
 func _run() -> void:
+	var initial_root_children: int = root.get_child_count()
 	await _test_capacity_duplicates_and_copies()
 	await _test_sort_pause_and_selection()
 	await _test_deferred_reset_and_local_c()
@@ -26,7 +27,7 @@ func _run() -> void:
 	await _test_temporary_disconnect()
 	await _test_permanent_revalidation()
 	await _test_completion_identity_and_reset()
-	_check(root.get_child_count() == 0, "Unit fixtures leave no scene objects")
+	_check(root.get_child_count() == initial_root_children, "Unit fixtures leave no scene objects")
 	print("CONSTRUCTION_QUEUE_TEST_RESULT ", JSON.stringify({
 		"checks": checks, "failures": failures, "cases": cases,
 		"evidence": "minimal_fixture_with_original_systems",

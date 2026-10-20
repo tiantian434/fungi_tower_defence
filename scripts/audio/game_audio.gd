@@ -64,8 +64,18 @@ func _ready() -> void:
 		var saved_music: Variant = config.get_value("audio", "music_volume", 0.6)
 		if (saved_music is float or saved_music is int) and is_finite(float(saved_music)):
 			music_volume = clampf(float(saved_music), 0.0, 1.0)
+		_previous_volume = _saved_unmuted_volume(config, "previous_effects_volume", _previous_volume)
+		_previous_music_volume = _saved_unmuted_volume(config, "previous_music_volume", _previous_music_volume)
 	_apply_volume()
 	_apply_music_volume()
+
+
+func _saved_unmuted_volume(config: ConfigFile, key: String, fallback: float) -> float:
+	# 旧存档没有此项时沿用默认值；有效的非零当前音量仍会在应用音量时更新它。
+	var saved: Variant = config.get_value("audio", key, fallback)
+	if (saved is float or saved is int) and is_finite(float(saved)) and float(saved) > 0.0:
+		return clampf(float(saved), 0.0, 1.0)
+	return fallback
 
 
 func play(cue_id: StringName) -> bool:
@@ -216,6 +226,8 @@ func save_preferences() -> void:
 	var config := ConfigFile.new()
 	config.set_value("audio", "effects_volume", effects_volume)
 	config.set_value("audio", "music_volume", music_volume)
+	config.set_value("audio", "previous_effects_volume", _previous_volume)
+	config.set_value("audio", "previous_music_volume", _previous_music_volume)
 	if config.save(preferences_path) == OK:
 		_preferences_dirty = false
 

@@ -7,6 +7,15 @@ var failures: Array[String] = []
 
 
 func _initialize() -> void:
+	node_added.connect(func(node: Node) -> void:
+		if node is GameAudio:
+			node.preferences_path = "res://.artifact_work/third_level_test-audio.cfg"
+			node.effects_volume = 0.0
+			node.music_volume = 0.0
+		elif node is GameDisplayManager:
+			node.preferences_path = "res://.artifact_work/third_level_test-display.cfg"
+		elif node is CampaignNavigator:
+			node.progress_store = CampaignProgressStore.new("res://.artifact_work/third_level_test-progress.cfg"))
 	_run.call_deferred()
 
 
@@ -197,9 +206,22 @@ func _order(order: Array) -> void:
 	level.fragment_collection._process(10)
 	_check(finishes[0] == 1, "terminal callbacks cannot finish twice")
 	await _frames(100)
-	_check(is_instance_valid(level.flow_hud._ending_panel) and not level.flow_hud.result_panel.visible, "CG4 placeholder appears after frozen network view")
-	level.flow_hud.finish_ending()
+	_check(not is_instance_valid(level.flow_hud._ending_panel) and not level.flow_hud.result_panel.visible, "memory recap waits for player rather than disappearing after a timer")
+	var ending: ColonyEndingView = level.flow_hud.ending_view
+	_check(ending.recap.visible and ending.memories.get_child_count() == 3, "all memory texts remain readable independently of compact HUD")
+	_check((ending.memories.get_child(2).get_node("Text") as Label).text == targets[2].memory_text, "last collected memory is present in persistent recap")
+	ending.painting_button.pressed.emit()
+	await _frames(3)
+	_check(ending.showcase.visible and not ending.recap.visible and paused, "player requests frozen actual network showcase")
+	ending.ending_button.pressed.emit()
+	_check(is_instance_valid(level.flow_hud._ending_panel), "ending CG opens only when player continues from their painting")
+	level.flow_hud._ending_panel.finish()
 	_check(level.flow_hud.result_panel.visible and not level.compact_hud.visible, "CG4 continues to accessible terminal summary")
+	_check(level.flow_hud.result_continue_button.visible and level.flow_hud.result_continue_button.text == "看看这幅画", "summary offers return to this actual painting")
+	level.flow_hud.result_continue_button.pressed.emit()
+	_check(ending.showcase.visible and ending.summary_button.visible and not level.flow_hud.result_panel.visible, "painting replay does not restart CG or simulation")
+	ending.summary_button.pressed.emit()
+	_check(level.flow_hud.result_panel.visible and paused, "painting replay returns to frozen summary")
 	await _dispose(level)
 
 

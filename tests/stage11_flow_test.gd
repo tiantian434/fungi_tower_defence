@@ -1,13 +1,12 @@
 extends SceneTree
-## 六波流程的独立夹具：真实生成器/敌人身份，显式缩短生成间隔并直接造成伤害。
-## 本测试不代表正式关卡的战斗、建设或 8–12 分钟通关验收。
+## 三波流程的独立夹具：真实生成器/敌人身份，显式缩短生成间隔并直接造成伤害。
+## 本测试不代表正式关卡的战斗、建设或 正式节奏通关验收。
 
 const CORE_SCENE: PackedScene = preload("res://scenes/colony/mother_core.tscn")
 const SPAWNER_SCENE: PackedScene = preload("res://scenes/systems/enemy_spawner.tscn")
 const NORMAL_SCENE: PackedScene = preload("res://scenes/enemies/basic_enemy.tscn")
 const EXPECTED: Array[Array] = [
-	[6, 0, 0, 0], [4, 3, 0, 0], [4, 4, 0, 0],
-	[3, 4, 2, 0], [4, 4, 1, 1], [5, 4, 3, 1],
+	[6, 0, 0, 0], [4, 8, 0, 0], [4, 9, 4, 0],
 ]
 const SNAPSHOT_KEYS: Array[String] = [
 	"state", "wave_index", "completed_waves", "wave_total", "planned", "spawned",
@@ -29,7 +28,7 @@ func _run() -> void:
 	root.size = Vector2i(1200, 800)
 	_test_resources()
 	await _test_manual_pause_and_timer()
-	await _test_six_waves_and_candidate()
+	await _test_three_waves_and_candidate()
 	await _test_terminal_paths()
 	await _test_stale_identity_and_reset()
 	await _test_reentrant_start_and_completion()
@@ -44,8 +43,8 @@ func _run() -> void:
 
 func _test_resources() -> void:
 	var flow := FirstLevelFlow.new()
-	_check(flow.waves.size() == 6 and flow.preparation_seconds == 12.0,
-		"Formal flow exports six waves and five 12-second preparation intervals")
+	_check(flow.waves.size() == FirstLevelFlow.WAVE_TOTAL and flow.preparation_seconds == 12.0,
+		"Formal flow exports three waves and two 12-second preparation intervals")
 	_check(flow.process_mode == Node.PROCESS_MODE_PAUSABLE, "Flow countdown uses pausable processing")
 	var total: int = 0
 	var counts: Array[Array] = []
@@ -81,8 +80,7 @@ func _test_resources() -> void:
 			total += amount
 		schedules.append({"wave": index + 1, "spawn_span_seconds": span - last_gap,
 			"anchors": points.keys()})
-	_check(total == 53 and flow.get_total_planned_count() == total,
-		"Formal six waves plan 53 individuals and expose the configured victory target")
+	_check(total == 35 and flow.get_total_planned_count() == total, "Formal three waves plan exactly 35 individuals without multiplying swarm groups")
 	evidence["resource_counts"] = counts
 	evidence["initial_schedules"] = schedules
 	flow.free()
@@ -156,8 +154,8 @@ func _fixture(custom_waves: Array[FirstLevelWave] = []) -> Dictionary:
 func _check_snapshot(snapshot: Dictionary) -> void:
 	for key: String in SNAPSHOT_KEYS:
 		_check(snapshot.has(key), "Flow snapshot supplies %s" % key)
-	_check(snapshot["wave_total"] == 6 and int(snapshot["wave_index"]) in range(7),
-		"Flow snapshot stays within six waves")
+	_check(snapshot["wave_total"] == FirstLevelFlow.WAVE_TOTAL and int(snapshot["wave_index"]) in range(FirstLevelFlow.WAVE_TOTAL + 1),
+		"Flow snapshot stays within three waves")
 	_check(int(snapshot["planned"]) == int(snapshot["spawned"]) + int(snapshot["unspawned"]),
 		"Flow snapshot planned equals spawned plus unspawned")
 	_check(int(snapshot["spawned"]) == int(snapshot["defeated"]) + int(snapshot["active"])
@@ -232,13 +230,13 @@ func _test_manual_pause_and_timer() -> void:
 	await _destroy(fixture)
 
 
-func _test_six_waves_and_candidate() -> void:
+func _test_three_waves_and_candidate() -> void:
 	var fixture := _fixture()
 	var flow: FirstLevelFlow = fixture["flow"]
 	var spawner: EnemySpawner = fixture["spawner"]
 	var counts: Array[Array] = []
 	var batches: Dictionary = {}
-	for index: int in range(6):
+	for index: int in range(FirstLevelFlow.WAVE_TOTAL):
 		fixture["observed"].fill(0)
 		_check(flow.begin_next_wave(), "Formal-plan wave %d starts from preparation" % (index + 1))
 		var identity := String(spawner.get_batch_snapshot()["batch_id"])
@@ -251,29 +249,29 @@ func _test_six_waves_and_candidate() -> void:
 			"Formal-plan wave %d clears only its exact real members" % (index + 1))
 		_check(snapshot["active"] == 0 and snapshot["unspawned"] == 0
 			and snapshot["defeated"] == snapshot["planned"], "Every accepted clear has all planned normal deaths")
-		if index < 5:
+		if index < FirstLevelFlow.WAVE_TOTAL - 1:
 			_check(snapshot["state"] == "preparation" and snapshot["preparation_remaining"] == 12.0
-				and fixture["candidates"].is_empty(), "First five clears prepare without a victory candidate")
+				and fixture["candidates"].is_empty(), "First two clears prepare without a victory candidate")
 	var final := flow.get_snapshot()
-	_check(final["state"] == "victory_candidate" and final["total_defeated"] == 53
-		and fixture["starts"].size() == 6 and fixture["finishes"].size() == 6,
-		"Six true clears produce exactly 53 normal defeats and six completed batches")
-	_check(fixture["candidates"].size() == 1, "Sixth clear emits exactly one candidate for the owning level")
+	_check(final["state"] == "victory_candidate" and final["total_defeated"] == 35
+		and fixture["starts"].size() == FirstLevelFlow.WAVE_TOTAL and fixture["finishes"].size() == FirstLevelFlow.WAVE_TOTAL,
+		"Three true clears produce exactly 35 normal defeats and three completed batches")
+	_check(fixture["candidates"].size() == 1, "Third clear emits exactly one candidate for the owning level")
 	var candidate: Dictionary = fixture["candidates"][0]
-	_check(candidate["completed_waves"] == 6 and candidate["wave_index"] == 6
-		and candidate["total_defeated"] == 53 and candidate["state"] == "completed"
+	_check(candidate["completed_waves"] == FirstLevelFlow.WAVE_TOTAL and candidate["wave_index"] == FirstLevelFlow.WAVE_TOTAL
+		and candidate["total_defeated"] == 35 and candidate["state"] == "completed"
 		and candidate["batch_id"] == final["batch_id"] and candidate["generation"] == final["batch_generation"]
 		and candidate["removed"] == 0 and candidate["active"] == 0 and candidate["unspawned"] == 0,
 		"Candidate supplies matching batch identity/generation and complete normal-death evidence")
 	_check(fixture["snapshots"].back()["state"] != "victory_candidate",
 		"Flow leaves final level snapshot publication to the candidate arbiter")
 	for _repeat: int in range(3):
-		_check(not flow.begin_next_wave(), "Six-wave flow rejects every seventh-wave request")
+		_check(not flow.begin_next_wave(), "Three-wave flow rejects every fourth-wave request")
 		flow._process(10000.0)
 		spawner.batch_finished.emit(String(final["batch_id"]))
-	_check(fixture["starts"].size() == 6 and fixture["candidates"].size() == 1,
-		"Timer and completion replays cannot spawn wave seven or duplicate a candidate")
-	evidence["six_waves"] = {"counts": counts, "snapshot": final, "candidate": candidate,
+	_check(fixture["starts"].size() == FirstLevelFlow.WAVE_TOTAL and fixture["candidates"].size() == 1,
+		"Timer and completion replays cannot spawn wave four or duplicate a candidate")
+	evidence["three_waves"] = {"counts": counts, "snapshot": final, "candidate": candidate,
 		"real_spawn_id_count": fixture["spawn_ids"].size()}
 	await _destroy(fixture)
 
@@ -450,7 +448,7 @@ func _test_reentrant_start_and_completion() -> void:
 
 func _test_synchronous_completion() -> void:
 	var waves: Array[FirstLevelWave] = []
-	for index: int in range(6):
+	for index: int in range(FirstLevelFlow.WAVE_TOTAL):
 		var wave := FirstLevelWave.new()
 		wave.title = "explicit synchronous fixture %d" % (index + 1)
 		wave.direction_text = "front"
@@ -464,11 +462,11 @@ func _test_synchronous_completion() -> void:
 	var spawner: EnemySpawner = fixture["spawner"]
 	spawner.enemy_spawned.connect(func(enemy: BasicEnemy, _spawn_id: String, _batch_id: String) -> void:
 		enemy.take_damage(100000))
-	for index: int in range(6):
+	for index: int in range(FirstLevelFlow.WAVE_TOTAL):
 		_check(flow.begin_next_wave() and flow.get_snapshot()["completed_waves"] == index + 1,
 			"A real one-member fixture can clear synchronously within start_batch without losing its identity")
 	_check(flow.get_snapshot()["state"] == "victory_candidate" and fixture["candidates"].size() == 1
-		and flow.get_snapshot()["total_defeated"] == 6, "Synchronous sixth completion produces one candidate after accepted identity confirmation")
+		and flow.get_snapshot()["total_defeated"] == FirstLevelFlow.WAVE_TOTAL, "Synchronous third completion produces one candidate after accepted identity confirmation")
 	evidence["synchronous_fixture"] = {"snapshot": flow.get_snapshot(), "candidates": fixture["candidates"].size()}
 	await _destroy(fixture)
 

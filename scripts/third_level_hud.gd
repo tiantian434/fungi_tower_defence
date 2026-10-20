@@ -6,7 +6,15 @@ var _objectives: Dictionary = {}
 var _ending_snapshot: Dictionary = {}
 var _ending_pending: bool = false
 var _ending_panel: StoryPlayer
-var _ending_timer: SceneTreeTimer
+var ending_view: ColonyEndingView
+var _showing_painting: bool = false
+var _camera_tween: Tween
+
+
+func _ready() -> void:
+	super._ready()
+	continue_requested.connect(_show_painting.bind(true))
+	get_viewport().size_changed.connect(_on_ending_view_resized)
 
 
 func show_objectives(snapshot: Dictionary) -> void:
@@ -56,15 +64,62 @@ func show_ending(snapshot: Dictionary) -> void:
 	_ending_pending = true
 	_ending_snapshot = snapshot.duplicate(true)
 	_render_flow()
-	# 先冻结并展示完成的网络，再进入CG4。计时器随本层退出断开，不遗留旧局回调。
-	_ending_timer = get_tree().create_timer(1.5, true)
-	_ending_timer.timeout.connect(_open_ending)
+	ending_view = preload("res://scenes/ui/colony_ending_view.tscn").instantiate() as ColonyEndingView
+	add_child(ending_view)
+	ending_view.painting_requested.connect(_show_painting.bind(false))
+	ending_view.ending_requested.connect(_open_ending)
+	ending_view.summary_requested.connect(_return_to_summary)
+	ending_view.show_memories((get_parent() as ThirdLevel).get_fragment_targets())
+	# 结算已经冻结敌人、运输和计时；最后一段记忆保留到玩家主动继续。
+	(get_parent() as ThirdLevel).prepare_painting_view()
+	_zoom_to_painting(false)
+
+
+func _show_painting(replay: bool) -> void:
+	if not is_instance_valid(ending_view):
+		return
+	_showing_painting = true
+	result_panel.hide()
+	ending_view.show_painting(replay)
+	_zoom_to_painting(true)
+
+
+func _zoom_to_painting(animated: bool) -> void:
+	var level := get_parent() as ThirdLevel
+	var camera: ColonyCamera = level.colony_camera
+	var frame: Rect2 = level.get_painting_bounds()
+	var viewport_size: Vector2 = get_viewport().get_visible_rect().size
+	var usable: Vector2 = Vector2(viewport_size.x - 100, viewport_size.y - 230)
+	var target_zoom: float = clampf(minf(usable.x / frame.size.x, usable.y / frame.size.y), 0.45, 1.0)
+	# 下方保留题字空间；让成画居中在剩余区域。
+	var target_position: Vector2 = frame.get_center() + Vector2(0, 75.0 / target_zoom)
+	if _camera_tween != null:
+		_camera_tween.kill()
+	if animated:
+		_camera_tween = create_tween().set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
+		_camera_tween.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+		var start_position: Vector2 = camera.global_position
+		var start_zoom: Vector2 = camera.zoom
+		_camera_tween.tween_method(func(weight: float) -> void:
+			camera.global_position = start_position.lerp(target_position, weight)
+			camera.zoom = start_zoom.lerp(Vector2.ONE * target_zoom, weight)
+			camera.force_update_scroll()
+			level._on_camera_view_changed(), 0.0, 1.0, 1.1)
+	else:
+		# 回顾卡片期间沿用玩家最后的视野，让拉远动作在点击后发生。
+		camera.clear_input_state()
+
+
+func _on_ending_view_resized() -> void:
+	if _showing_painting and is_instance_valid(ending_view) and ending_view.visible:
+		_zoom_to_painting(true)
 
 
 func _open_ending() -> void:
 	if not is_inside_tree() or not _ending_pending:
 		return
-	_ending_timer = null
+	_showing_painting = false
+	ending_view.hide()
 	_ending_panel = StoryPlayer.open(self, 4)
 	_ending_panel.finished.connect(finish_ending)
 
@@ -73,11 +128,33 @@ func finish_ending() -> void:
 	if not _ending_pending:
 		return
 	_ending_pending = false
+	_showing_painting = false
 	if is_instance_valid(_ending_panel):
 		_ending_panel.queue_free()
+	if is_instance_valid(ending_view):
+		ending_view.hide()
+	var navigator := get_node_or_null("/root/CampaignFlow") as CampaignNavigator
+	if is_instance_valid(navigator) and navigator.active_run:
+		navigator.progress_store.record_story_seen(4)
 	show_result(_ending_snapshot)
+	# 结尾按钮使用真实文案，不复用写着“进入下一关”的位图。
+	for state: String in ["normal", "hover", "pressed", "hover_pressed", "disabled"]:
+		result_continue_button.remove_theme_stylebox_override(state)
+	for state: String in ["font_color", "font_hover_color", "font_pressed_color", "font_hover_pressed_color", "font_focus_color", "font_disabled_color"]:
+		result_continue_button.remove_theme_color_override(state)
+	result_continue_button.set_meta("art_bitmap", false)
+	result_continue_button.focus_mode = Control.FOCUS_ALL
+	show_continue("看看这幅画")
+	result_continue_button.tooltip_text = "回到这次亲手长出的花海"
+
+
+func _return_to_summary() -> void:
+	_showing_painting = false
+	ending_view.hide()
+	result_panel.show()
+	result_continue_button.grab_focus()
 
 
 func _exit_tree() -> void:
-	if _ending_timer != null and _ending_timer.timeout.is_connected(_open_ending):
-		_ending_timer.timeout.disconnect(_open_ending)
+	if _camera_tween != null:
+		_camera_tween.kill()

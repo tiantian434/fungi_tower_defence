@@ -10,7 +10,6 @@
 [ext_resource type="PackedScene" path="res://scenes/colony/digestive_organ.tscn" id="7_stomach"]
 [ext_resource type="PackedScene" path="res://scenes/recycling/large_carcass.tscn" id="8_carcass"]
 [ext_resource type="Resource" path="res://resources/weapons/normal_spore.tres" id="9_weapon_profile"]
-[ext_resource type="Script" path="res://scripts/memory_fragment.gd" id="10_fragment"]
 [ext_resource type="Script" path="res://scripts/exploration_production_controller.gd" id="11_production"]
 [ext_resource type="Resource" path="res://resources/exploration/third_level_production.tres" id="12_profile"]
 [ext_resource type="PackedScene" path="res://scenes/ui/first_level_hud.tscn" id="13_hud"]
@@ -18,6 +17,10 @@
 [ext_resource type="Script" path="res://scripts/terrain_navigation.gd" id="15_terrain"]
 [ext_resource type="Script" path="res://scripts/frontier_status.gd" id="16_frontier"]
 [ext_resource type="Script" path="res://scripts/fragment_collection_controller.gd" id="17_collection"]
+[ext_resource type="PackedScene" path="res://scenes/objectives/memory_fragment.tscn" id="18_memory"]
+[ext_resource type="Texture2D" path="res://assets/story/cg1/A1-1.png" id="19_childhood"]
+[ext_resource type="Texture2D" path="res://assets/story/cg1/A4.png" id="20_persistence"]
+[ext_resource type="Texture2D" path="res://assets/story/cg3/c1-3.png" id="21_choice"]
 
 [node name="ThirdLevel" instance=ExtResource("1_base")]
 script = ExtResource("2_level")
@@ -128,28 +131,31 @@ total_nutrition = 120
 
 [node name="Fragments" type="Node2D" parent="World"]
 
-[node name="FirstCreation" type="Node2D" parent="World/Fragments"]
+[node name="FirstCreation" parent="World/Fragments" instance=ExtResource("18_memory")]
 position = Vector2(280, 325)
-script = ExtResource("10_fragment")
 fragment_id = &"first_creation"
 label_offset = Vector2(-200, 10)
 display_name = "初次创作"
 memory_text = "我还记得，第一次画出自己的世界时，那种快乐。"
+memory_image = ExtResource("19_childhood")
+accent = Color(0.84, 0.63, 0.35, 1)
 
-[node name="Persistence" type="Node2D" parent="World/Fragments"]
+[node name="Persistence" parent="World/Fragments" instance=ExtResource("18_memory")]
 position = Vector2(940, 335)
-script = ExtResource("10_fragment")
 fragment_id = &"persistence"
 label_offset = Vector2(-40, 27)
 display_name = "坚持创作"
 memory_text = "后来，我也有过怀疑。可我仍然一次次拿起画笔。"
+memory_image = ExtResource("20_persistence")
+accent = Color(0.58, 0.56, 0.75, 1)
 
-[node name="OwnChoice" type="Node2D" parent="World/Fragments"]
+[node name="OwnChoice" parent="World/Fragments" instance=ExtResource("18_memory")]
 position = Vector2(950, 710)
-script = ExtResource("10_fragment")
 fragment_id = &"own_choice"
 display_name = "自己的选择"
 memory_text = "现在，我想画什么，就继续画下去。"
+memory_image = ExtResource("21_choice")
+accent = Color(0.42, 0.67, 0.59, 1)
 
 [node name="LeftEntrance" type="Marker2D" parent="World/SpawnPoints"]
 position = Vector2(80, 180)

@@ -181,8 +181,10 @@ func _run() -> void:
 	_check(organ.get_attack_type() == direction
 		and weapon.get_nutrition_cost() == expected_cost and weapon.attack_range == expected_range
 		and is_equal_approx(weapon.fire_timer.wait_time, expected_interval)
-		and weapon.fire_timer.time_left > expected_interval - 0.1,
-		"Completion applies the paid direction once and resumes at a full matching cooldown")
+		and organ.get_requested_work_enabled()
+		and (weapon.fire_timer.is_stopped() if organ.is_dormant
+			else weapon.fire_timer.time_left > expected_interval - 0.1),
+		"Completion applies the paid direction once, restores work intent and respects empty-range dormancy")
 	evidence["paid_differentiation"] = {"materials": records.size(), "consumed": complete.consumed_nutrition,
 		"effective_seconds": complete.effective_time, "stock_before": stock, "stock_after": organ.nutrition,
 		"incoming_before": incoming, "refund": supply.get_supply_snapshot().refunded,
@@ -205,6 +207,12 @@ func _verify_new_attack() -> void:
 	level.get_node("World/Enemies").add_child(target)
 	target.global_position = organ.global_position + Vector2(-120, 0)
 	var before: Dictionary = weapon.get_shot_statistics()
+	await _step()
+	var expected_interval: float = weapon.get_weapon_profile().fire_interval
+	_check(not organ.is_dormant and organ.is_work_enabled()
+		and weapon.fire_timer.time_left > expected_interval - 0.1
+		and weapon.get_shot_statistics() == before,
+		"A real enemy wakes the upgraded organ with a full new cooldown and no immediate free shot")
 	for _frame: int in range(240):
 		await _step()
 		if target.health < 200:

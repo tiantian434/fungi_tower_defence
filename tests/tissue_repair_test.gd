@@ -32,12 +32,13 @@ func _initialize() -> void:
 
 
 func _run() -> void:
+	var initial_root_children: int = root.get_child_count()
 	_test_tissue_defaults_and_death_transitions()
 	_test_attack_host_intent()
 	_test_digestive_pause_and_loss_settlement()
 	_test_paid_neighbor_repair_and_integer_core()
 	_test_work_connection()
-	_check(root.get_child_count() == 0, "All tissue fixtures released")
+	_check(root.get_child_count() == initial_root_children, "All tissue fixtures released; project autoloads preserved")
 	print("TISSUE_REPAIR_TEST_RESULT ", JSON.stringify({"checks": checks, "failures": failures}))
 	quit(0 if failures.is_empty() else 1)
 

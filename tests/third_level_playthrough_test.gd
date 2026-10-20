@@ -19,15 +19,27 @@ var _level: ThirdLevel
 var _next_maintenance: float = 0
 var _first_recovery: float = -1
 var _requests: Dictionary = {}
+var _mature_hosts: Dictionary = {}
 
 
 func _initialize() -> void:
+	node_added.connect(func(node: Node) -> void:
+		if node is GameAudio:
+			node.preferences_path = "res://.artifact_work/third-playthrough-audio.cfg"
+			node.effects_volume = 0.0
+			node.music_volume = 0.0
+		elif node is GameDisplayManager:
+			node.preferences_path = "res://.artifact_work/third-playthrough-display.cfg"
+		elif node is CampaignNavigator:
+			node.progress_store = CampaignProgressStore.new("res://.artifact_work/third-playthrough-progress.cfg"))
 	_run.call_deferred()
 
 
 func _run() -> void:
 	await _play([&"first_creation", &"persistence", &"own_choice"], false)
 	await _play([&"own_choice", &"persistence", &"first_creation"], true)
+	if records.size() != 2:
+		failures.append("both exploration routes must finish their result and resource checks")
 	print("THIRD_LEVEL_PLAYTHROUGH_RESULT ", JSON.stringify({"failures": failures, "routes": records}))
 	quit(0 if failures.is_empty() else 1)
 
@@ -45,14 +57,21 @@ func _tick() -> void:
 
 func _play(order: Array[StringName], parallel: bool) -> void:
 	_level = LEVEL.instantiate() as ThirdLevel
-	var profile: WeaponProfile = _level.normal_weapon_profile
+	var exported: Dictionary = {}
+	for property: Dictionary in _level.get_property_list():
+		if int(property.usage) & PROPERTY_USAGE_SCRIPT_VARIABLE and int(property.usage) & PROPERTY_USAGE_STORAGE:
+			exported[property.name] = _level.get(property.name)
 	_level.set_script(QuietThirdLevel)
-	_level.normal_weapon_profile = profile
+	for property_name: String in exported:
+		_level.set(property_name, exported[property_name])
 	root.add_child(_level)
 	_next_maintenance = 0.5
 	_first_recovery = -1
 	_requests.clear()
+	_mature_hosts.clear()
 	for _frame: int in range(4): await _tick()
+	_level.construction_coordinator.organ_matured.connect(func(id: String, host: HyphaNode, _organ: AttackOrgan, _weapon: SporeWeapon) -> void:
+		_mature_hosts[id] = weakref(host))
 	_level.construction_coordinator.request_finished.connect(func(id: String, state: StringName) -> void:
 		var request: Dictionary = _level.construction_coordinator.get_request(id)
 		print("THIRD_LEVEL_CONSTRUCTION_FINISHED ", id, " state=", state,
@@ -94,7 +113,8 @@ func _submit(point: Vector2) -> bool:
 	_level.choose_organ(&"attack")
 	# 已形成的菌结仍保留时，通过真实C培育重建，不重复放置重叠的远处目标。
 	for node: Node2D in _level.network_system.get_registered_nodes():
-		if node is HyphaNode and node.is_functional() and point.distance_to(node.global_position) < 24:
+		if node is HyphaNode and node.is_functional() \
+				and point.distance_to(node.global_position) <= CultivationInputController.OVERLAP_RADIUS:
 			input.exit_remote_placement_mode()
 			input.select_node(node)
 			var local_accepted: bool = input.request_cultivation()
@@ -123,9 +143,7 @@ func _build_route(id: StringName, already_submitted: bool) -> bool:
 		var retries: int = 0
 		while _level.elapsed_seconds - start < 70 and _level.get_result_snapshot().is_empty() \
 				and not _level.fragment_collection.collected_ids.has(id):
-			for weapon: SporeWeapon in _level.get_weapons():
-				if weapon.get_parent().global_position.distance_to(point) < 2:
-					ready = true
+			ready = _weapon_for_request(point) != null
 			if ready: break
 			var request: Dictionary = _level.construction_coordinator.get_request(_requests.get(point, ""))
 			if request.get("state") in [&"failed", &"cancelled"]:
@@ -155,8 +173,8 @@ func _build_route(id: StringName, already_submitted: bool) -> bool:
 func _prepare_lower_front(point: Vector2) -> bool:
 	var start: float = _level.elapsed_seconds
 	while _level.elapsed_seconds - start < 35 and _level.get_result_snapshot().is_empty():
-		for weapon: SporeWeapon in _level.get_weapons():
-			if weapon.get_parent().global_position.distance_to(point) >= 2: continue
+		var weapon: SporeWeapon = _weapon_for_request(point)
+		if is_instance_valid(weapon):
 			if weapon.get_weapon_profile().damage_type == WeaponProfile.DamageType.ARMOR_PIERCING:
 				print("THIRD_LEVEL_FORWARD_ARMOR_READY time=", _level.elapsed_seconds)
 				return true
@@ -165,6 +183,20 @@ func _prepare_lower_front(point: Vector2) -> bool:
 				_level.differentiation_input_controller.request_start(WeaponProfile.DamageType.ARMOR_PIERCING)
 		await _tick()
 	return false
+
+
+## 使用真实建设任务成熟的宿主；24px 内复用已有花朵时，宿主不必恰好位于点击坐标。
+func _weapon_for_request(point: Vector2) -> SporeWeapon:
+	var reference: WeakRef = _mature_hosts.get(_requests.get(point, "")) as WeakRef
+	if reference == null:
+		return null
+	var host: HyphaNode = reference.get_ref() as HyphaNode
+	if not is_instance_valid(host) or host.is_queued_for_deletion():
+		return null
+	for weapon: SporeWeapon in _level.get_weapons():
+		if weapon.get_parent() == host:
+			return weapon
+	return null
 
 
 func _maintain() -> void:

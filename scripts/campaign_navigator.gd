@@ -34,12 +34,7 @@ func start_new_game() -> bool:
 	if _transition_pending or not progress_store.start_new_game():
 		return false
 	active_run = true
-	_transition_pending = true
-	var player := StoryPlayer.open(self, 1)
-	player.finished.connect(func() -> void:
-		_transition_pending = false
-		_open_scene(LEVEL_SCENES[0]))
-	return true
+	return launch_level(1)
 
 
 func continue_game() -> bool:
@@ -47,7 +42,25 @@ func continue_game() -> bool:
 	if _transition_pending or not bool(progress.has_save):
 		return false
 	active_run = true
-	return _open_scene(LEVEL_SCENES[int(progress.continue_level) - 1])
+	return launch_level(int(progress.continue_level))
+
+
+## 标题继续和关卡结算都走同一入口，避免返回标题后漏掉新章节剧情。
+func launch_level(level_index: int, replay_story: bool = false) -> bool:
+	if _transition_pending or level_index < 1 or level_index > LEVEL_SCENES.size():
+		return false
+	if active_run and level_index > int(progress_store.get_snapshot().highest_unlocked):
+		return false
+	if not replay_story and active_run and progress_store.has_seen_story(level_index):
+		return _open_scene(LEVEL_SCENES[level_index - 1])
+	_transition_pending = true
+	var player := StoryPlayer.open(self, level_index)
+	player.finished.connect(func() -> void:
+		if active_run:
+			progress_store.record_story_seen(level_index)
+		_transition_pending = false
+		_open_scene(LEVEL_SCENES[level_index - 1]))
+	return true
 
 
 func bind_level(level: Node) -> void:

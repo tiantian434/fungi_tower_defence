@@ -12,6 +12,7 @@ var _restart_pending: bool = false
 var _attack_preview: Dictionary = {}
 var _objective_overlay: Node2D
 var _preview_font: SystemFont
+var _frontline_tutorial_shown: bool = false
 
 
 func _ready() -> void:
@@ -58,6 +59,7 @@ func _ready() -> void:
 	_second_ready = true
 	initialize_level_camera(compact_hud, _camera_input_allowed)
 	_refresh_second_hud()
+	first_guide.record_event(&"opening")
 	hud.show_notice("第二关：%d秒后AI绘图终端开始生成敌人。接通两侧数位板，建造前沿炮台；点击终端可设为优先目标。" % ceili(wave_flow.profile.preparation_seconds))
 
 
@@ -209,14 +211,13 @@ func _open_third_level() -> void:
 		return
 	_restart_pending = true
 	pause_controller.reset()
-	var player := StoryPlayer.open(self, 3)
-	player.finished.connect(func() -> void:
-		get_tree().change_scene_to_file("res://scenes/levels/third_level.tscn"))
+	if not CampaignNavigator.ensure(get_tree()).launch_level(3):
+		_restart_pending = false
 
 
 func _on_facility_destroyed(_id: StringName) -> void:
 	first_guide.record_event(&"facility_destroyed")
-	hud.show_notice("AI绘图终端已摧毁，永久停止该终端的后续生成；仍需防守已出现的敌人。")
+	hud.show_notice("一处评价终端已关闭，创作的空间正在回来；仍需防守已出现的敌人。")
 
 
 func _on_enemy_created(enemy: BasicEnemy) -> void:
@@ -232,6 +233,20 @@ func _on_second_recycling(_in_transit: int, delivered: int, _interrupted: int) -
 
 func _on_second_recovery(total: int, _products: int) -> void:
 	if total > 0: first_guide.record_event(&"nutrition_returned")
+
+
+## 沿用实际建造完成回调，只在新炮台真正覆盖存活终端时提示集中火力。
+func _on_organ_matured(task_id: int, host: HyphaNode,
+		organ: AttackOrgan, new_weapon: SporeWeapon) -> void:
+	super._on_organ_matured(task_id, host, organ, new_weapon)
+	if not _second_ready or _frontline_tutorial_shown or not is_instance_valid(organ) or not is_instance_valid(new_weapon):
+		return
+	for facility: AIFacility in get_facility_targets():
+		if facility.is_alive() and organ.global_position.distance_to(facility.global_position) <= new_weapon.attack_range:
+			_frontline_tutorial_shown = true
+			first_guide.record_event(&"frontline_ready")
+			hud.show_notice("炮台已能攻击%s。点击该终端集中火力，再次点击可取消优先。" % facility.display_name)
+			return
 
 
 func _refresh_second_hud() -> void:

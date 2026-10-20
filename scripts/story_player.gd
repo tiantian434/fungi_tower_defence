@@ -37,11 +37,18 @@ func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_audio = GameAudio.find_for(self)
 	if _audio == null:
-		_audio = preload("res://scenes/audio/game_audio.tscn").instantiate() as GameAudio
-		add_child(_audio)
-	_audio.observe_ui(self)
-	if not sequence.music_id.is_empty():
-		_audio.play_music(sequence.music_id)
+		# 音频反馈脚本会引用关卡类型；运行时加载可避免经 StoryPlayer 回到音频场景的预加载环。
+		var audio_scene := load("res://scenes/audio/game_audio.tscn") as PackedScene
+		if audio_scene != null and audio_scene.can_instantiate():
+			_audio = audio_scene.instantiate() as GameAudio
+		if is_instance_valid(_audio):
+			add_child(_audio)
+		else:
+			push_error("剧情音频场景无法加载，保留剧情操作以便继续游戏。")
+	if is_instance_valid(_audio):
+		_audio.observe_ui(self)
+		if not sequence.music_id.is_empty():
+			_audio.play_music(sequence.music_id)
 	layer = 100
 	var backdrop := ColorRect.new()
 	backdrop.color = Color("e7dfd2")
@@ -153,6 +160,14 @@ func _input(event: InputEvent) -> void:
 	if GameDisplayManager.is_display_shortcut(event):
 		return
 	if event is InputEventKey and event.pressed and not event.echo:
+		var focused: Control = get_viewport().gui_get_focus_owner()
+		# 音量滑杆的方向键和按钮的空格先交给 GUI，避免调音量时退回上一幕，
+		# 或按空格静音时意外跳过剧情。其余剧情快捷键保持全局可用。
+		if is_instance_valid(focused) and is_ancestor_of(focused):
+			if focused is Range and event.keycode in [KEY_LEFT, KEY_RIGHT, KEY_UP, KEY_DOWN, KEY_HOME, KEY_END, KEY_PAGEUP, KEY_PAGEDOWN]:
+				return
+			if focused is BaseButton and event.keycode == KEY_SPACE:
+				return
 		if event.keycode == KEY_ESCAPE:
 			finish()
 		elif event.keycode == KEY_SPACE:
@@ -160,7 +175,8 @@ func _input(event: InputEvent) -> void:
 		elif event.keycode == KEY_LEFT:
 			previous()
 		elif event.keycode == KEY_P:
-			_toggle_play()
+			if not _play.disabled:
+				_toggle_play()
 		elif event.keycode in [KEY_TAB, KEY_ENTER, KEY_KP_ENTER, KEY_UP, KEY_DOWN, KEY_RIGHT]:
 			# 留给当前剧情按钮的键盘导航；其他游戏快捷键由剧情层拦截。
 			return
@@ -168,9 +184,9 @@ func _input(event: InputEvent) -> void:
 
 func _toggle_play() -> void:
 	playing = not playing
-	if not sequence.music_id.is_empty():
+	if is_instance_valid(_audio) and not sequence.music_id.is_empty():
 		_audio.pause_music(not playing)
-	_play.text = "暂停播放" if playing else "自动播放"
+	_play.text = "等待继续" if frame_index >= sequence.get_count() - 1 else ("暂停播放" if playing else "自动播放")
 
 func advance() -> void:
 	if _finished:
@@ -218,15 +234,18 @@ func _refresh() -> void:
 	_counter.text = "%02d / %02d" % [frame_index + 1, sequence.get_count()]
 	if not has_shots and sequence.frames.is_empty():
 		_counter.text = "剧情占位 · 美术图片待替换 · Space 继续 · Esc 跳过"
-	_next.text = "继续" if frame_index >= sequence.get_count() - 1 else "下一幕"
-	_play.disabled = sequence.get_count() < 2
+	var last_frame: bool = frame_index >= sequence.get_count() - 1
+	_next.text = ("查看通关记录 · Space" if sequence.resource_path.ends_with("cg4.tres") else "进入关卡 · Space") if last_frame else "下一幕"
+	_play.text = "等待继续" if last_frame else ("暂停播放" if playing else "自动播放")
+	_play.disabled = sequence.get_count() < 2 or last_frame
 	_previous.disabled = frame_index == 0
 	_previous.tooltip_text = "← 上一幕"
 	_next.tooltip_text = "Space 下一幕或继续"
 	_play.tooltip_text = "P 暂停或自动播放"
 	if _last_audio_frame != frame_index:
 		_last_audio_frame = frame_index
-		_audio.play(&"paper")
+		if is_instance_valid(_audio):
+			_audio.play(&"paper")
 
 
 func _update_transition() -> void:

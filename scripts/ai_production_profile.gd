@@ -4,6 +4,7 @@ extends Resource
 
 @export var preparation_seconds: float = 30.0
 @export var cycle_seconds: float = 35.0
+## 各终端的错峰间隔；提前开战与摧毁终端后的喘息均保留此间隔。
 @export var source_stagger_seconds: float = 0.0
 @export var warning_seconds: float = 5.0
 @export var destruction_grace_seconds: float = 20.0
@@ -33,6 +34,10 @@ func is_valid() -> bool:
 		if scene == null or not scene.can_instantiate():
 			return false
 	return true
+
+
+func get_initial_delay(source_index: int) -> float:
+	return preparation_seconds + maxi(0, source_index) * source_stagger_seconds
 
 
 func get_scenes_for_cycle(elapsed: float, cycle: int, source_index: int) -> Array[PackedScene]:

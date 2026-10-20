@@ -1,20 +1,17 @@
 class_name FirstLevelFlow
 extends Node
-## 六波流程只管理批次与准备倒计时；关卡负责母核生死和最终结算。
+## 三段首关流程只管理批次与准备倒计时；关卡负责母核生死和最终结算。
 
 signal changed(snapshot: Dictionary)
 signal victory_candidate(evidence: Dictionary)
 signal interrupted(reason: StringName)
 
-const WAVE_TOTAL: int = 6
+const WAVE_TOTAL: int = 3
 
 @export var waves: Array[FirstLevelWave] = [
 	preload("res://resources/first_level_waves/wave_01.tres"),
 	preload("res://resources/first_level_waves/wave_02.tres"),
 	preload("res://resources/first_level_waves/wave_03.tres"),
-	preload("res://resources/first_level_waves/wave_04.tres"),
-	preload("res://resources/first_level_waves/wave_05.tres"),
-	preload("res://resources/first_level_waves/wave_06.tres"),
 ]
 @export var preparation_seconds: float = 12.0
 
@@ -262,6 +259,11 @@ func get_total_planned_count() -> int:
 			return 0
 		total += count
 	return total
+
+
+func get_planned_total() -> int:
+	# 兼容已有观察面板和验收入口，汇总与配置有效性检查共用同一实现。
+	return get_total_planned_count()
 
 
 func stop(reason: StringName) -> void:

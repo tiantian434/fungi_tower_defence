@@ -4,6 +4,7 @@
 [ext_resource type="Script" path="res://scripts/gameplay/colony_camera.gd" id="colony_camera"]
 [ext_resource type="Script" path="res://scripts/visuals/map_boundary.gd" id="map_boundary"]
 [ext_resource type="PackedScene" path="res://scenes/audio/game_audio.tscn" id="audio_feedback"]
+[ext_resource type="PackedScene" path="res://scenes/visuals/colony_growth_feedback.tscn" id="growth_feedback"]
 [ext_resource type="Script" path="res://scripts/visuals/world_art.gd" id="world_art"]
 [ext_resource type="Resource" path="res://resources/art/chapter_1.tres" id="chapter_art"]
 [ext_resource type="Texture2D" path="res://resources/art/textures/flower_1.tres" id="flower_1"]
@@ -62,6 +63,8 @@ script = ExtResource("colony_camera")
 
 [node name="World" type="Node2D" parent="."]
 y_sort_enabled = true
+
+[node name="GrowthFeedback" parent="World" instance=ExtResource("growth_feedback")]
 
 [node name="MapBoundary" type="Node2D" parent="World"]
 visible = false

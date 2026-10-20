@@ -3,6 +3,11 @@ var failures: int = 0
 var completions: int = 0
 
 func _initialize() -> void:
+	node_added.connect(func(node: Node) -> void:
+		if node is GameAudio:
+			node.preferences_path = "res://.artifact_work/story-input-audio.cfg"
+			node.effects_volume = 0.0
+			node.music_volume = 0.0)
 	_run.call_deferred()
 
 func _check(value: bool, message: String) -> void:
@@ -42,5 +47,43 @@ func _run() -> void:
 	await process_frame
 	_check(completions == 5, "skip cannot double-complete image sequence")
 	paused = false
+	await _check_focused_controls(sequence)
 	print("STORY PLAYER failures=", failures)
 	quit(0 if failures == 0 else 1)
+
+
+func _check_focused_controls(sequence: StorySequence) -> void:
+	var player := StoryPlayer.new()
+	player.sequence = sequence
+	player.playing = false
+	root.add_child(player)
+	player.advance()
+	await process_frame
+	var slider := player.find_children("*", "HSlider", true, false)[0] as HSlider
+	slider.value = 50
+	slider.grab_focus()
+	_key(KEY_LEFT)
+	await process_frame
+	_check(player.frame_index == 1 and slider.value == 45, "focused volume slider uses Left without changing story frame")
+	var mute_button := slider.get_parent().get_node("Toggle") as Button
+	mute_button.grab_focus()
+	_key(KEY_SPACE)
+	await process_frame
+	_check(player.frame_index == 1 and slider.value == 0, "focused mute button uses Space without skipping a frame")
+	player._next.grab_focus()
+	_key(KEY_SPACE)
+	await process_frame
+	_check(player.frame_index == 2, "focused continuation still advances with Space")
+	var last_playing: bool = player.playing
+	_key(KEY_P)
+	_check(player.playing == last_playing, "last frame waiting state cannot be toggled by the disabled play shortcut")
+	player.finish()
+	await process_frame
+
+
+func _key(code: Key) -> void:
+	for pressed: bool in [true, false]:
+		var event := InputEventKey.new()
+		event.keycode = code
+		event.pressed = pressed
+		root.push_input(event, true)

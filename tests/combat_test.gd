@@ -7,6 +7,7 @@ const ENEMY_SCENE: PackedScene = preload("res://scenes/enemies/basic_enemy.tscn"
 var failures: Array[String] = []
 var checks: int = 0
 var full_wave_result: Dictionary = {}
+var _initial_root_children: int = 0
 
 
 func _initialize() -> void:
@@ -14,6 +15,7 @@ func _initialize() -> void:
 
 
 func _run() -> void:
+	_initial_root_children = root.get_child_count()
 	root.size = Vector2i(1200, 800)
 	await _test_range_damage_and_stock()
 	await _test_empty_inventory_and_missing_target()
@@ -271,4 +273,4 @@ func _test_default_wave() -> void:
 		"in_transit": in_transit
 	}
 	await _remove_level(level)
-	_check(root.get_child_count() == 0, "Combat teardown left orphan nodes")
+	_check(root.get_child_count() == _initial_root_children, "Combat teardown left orphan nodes")

@@ -23,6 +23,7 @@ func _initialize() -> void:
 
 
 func _run() -> void:
+	var initial_root_children: int = root.get_child_count()
 	root.size = Vector2i(1200, 800)
 	root.physics_object_picking = true
 	await _test_three_formal_targets_complete_serially()
@@ -30,7 +31,7 @@ func _run() -> void:
 		await _test_growth_cache_cancel_then_next()
 		await _test_remote_startup_cancel_then_next()
 		await _test_reset_and_late_settlement()
-	_check(root.get_child_count() == 0, "Physical integration teardown removes all level objects")
+	_check(root.get_child_count() == initial_root_children, "Physical integration teardown removes all level objects")
 	print("CONSTRUCTION_QUEUE_INTEGRATION_TEST_RESULT ", JSON.stringify({
 		"checks": checks, "failures": failures, "conservation_checks": conservation_checks,
 		"cases": cases, "evidence": "formal_level_original_physical_transport",
