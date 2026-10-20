@@ -16,13 +16,13 @@ run/main_scene="res://scenes/ui/main_menu.tscn"
 config/features=PackedStringArray("4.7", "GL Compatibility")
 config/icon="res://icon.svg"
 
-[autoload]
-
-GameDisplay="*res://scripts/display/game_display.gd"
-
 [audio]
 
 default_bus_layout="res://default_bus_layout.tres"
+
+[autoload]
+
+GameDisplay="*res://scripts/display/game_display.gd"
 
 [display]
 
