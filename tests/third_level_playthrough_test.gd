@@ -3,9 +3,9 @@ extends SceneTree
 
 const LEVEL: PackedScene = preload("res://scenes/levels/third_level.tscn")
 const ROUTES: Dictionary = {
-	&"first_creation": [Vector2(350, 395), Vector2(270, 315)],
-	&"persistence": [Vector2(765, 460), Vector2(870, 390), Vector2(930, 310)],
-	&"own_choice": [Vector2(790, 660), Vector2(875, 670), Vector2(955, 695)],
+	&"first_creation": [Vector2(350, 395)],
+	&"persistence": [Vector2(765, 460), Vector2(870, 390)],
+	&"own_choice": [Vector2(790, 660), Vector2(875, 670)],
 }
 
 class QuietThirdLevel:
@@ -57,9 +57,13 @@ func _tick() -> void:
 
 func _play(order: Array[StringName], parallel: bool) -> void:
 	_level = LEVEL.instantiate() as ThirdLevel
-	var profile: WeaponProfile = _level.normal_weapon_profile
+	var exported: Dictionary = {}
+	for property: Dictionary in _level.get_property_list():
+		if int(property.usage) & PROPERTY_USAGE_SCRIPT_VARIABLE and int(property.usage) & PROPERTY_USAGE_STORAGE:
+			exported[property.name] = _level.get(property.name)
 	_level.set_script(QuietThirdLevel)
-	_level.normal_weapon_profile = profile
+	for property_name: String in exported:
+		_level.set(property_name, exported[property_name])
 	root.add_child(_level)
 	_next_maintenance = 0.5
 	_first_recovery = -1
@@ -137,7 +141,8 @@ func _build_route(id: StringName, already_submitted: bool) -> bool:
 		var start: float = _level.elapsed_seconds
 		var ready: bool = false
 		var retries: int = 0
-		while _level.elapsed_seconds - start < 70 and _level.get_result_snapshot().is_empty():
+		while _level.elapsed_seconds - start < 70 and _level.get_result_snapshot().is_empty() \
+				and not _level.fragment_collection.collected_ids.has(id):
 			ready = _weapon_for_request(point) != null
 			if ready: break
 			var request: Dictionary = _level.construction_coordinator.get_request(_requests.get(point, ""))

@@ -43,9 +43,13 @@ func _frames(count: int = 1) -> void:
 
 func _run() -> void:
 	level = LEVEL.instantiate() as FirstLevel
-	var weapon_profile: WeaponProfile = level.normal_weapon_profile
+	var exported: Dictionary = {}
+	for property: Dictionary in level.get_property_list():
+		if int(property.usage) & PROPERTY_USAGE_SCRIPT_VARIABLE and int(property.usage) & PROPERTY_USAGE_STORAGE:
+			exported[property.name] = level.get(property.name)
 	level.set_script(QuietFirstLevel)
-	level.normal_weapon_profile = weapon_profile
+	for property_name: String in exported:
+		level.set(property_name, exported[property_name])
 	root.add_child(level)
 	current_scene = level
 	await _frames(3)

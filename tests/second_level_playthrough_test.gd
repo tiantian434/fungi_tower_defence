@@ -53,9 +53,13 @@ func _frames(count: int) -> void:
 
 func _play(order: Array[StringName]) -> void:
 	var level := LEVEL.instantiate() as SecondLevel
-	var weapon_profile: WeaponProfile = level.normal_weapon_profile
+	var exported: Dictionary = {}
+	for property: Dictionary in level.get_property_list():
+		if int(property.usage) & PROPERTY_USAGE_SCRIPT_VARIABLE and int(property.usage) & PROPERTY_USAGE_STORAGE:
+			exported[property.name] = level.get(property.name)
 	level.set_script(QuietSecondLevel)
-	level.normal_weapon_profile = weapon_profile
+	for property_name: String in exported:
+		level.set(property_name, exported[property_name])
 	root.add_child(level)
 	_active_level = level
 	_next_maintenance = 0.5
@@ -76,22 +80,27 @@ func _play(order: Array[StringName]) -> void:
 		var firing_point: Vector2 = POINTS[id] if id != &"center" else (
 			Vector2(550, 340) if order[0] == &"left" else Vector2(650, 340))
 		_support_points.append(support)
-		_firing_points.append(firing_point)
 		if not await _build(level, support):
 			failures.append("route %s could not build protected route to %s" % [order, id])
 			break
-		# 后拆右终端时，该方向已积累数轮羊群；再推进一个支援点，清空前沿再培育火力点。
-		if id == &"right" and level.elapsed_seconds >= level.wave_flow.profile.advanced_after_seconds:
-			var forward_guard := Vector2(885, 460)
-			_support_points.append(forward_guard)
-			if not await _build(level, forward_guard):
-				failures.append("route %s could not reinforce the late right push" % [order])
+		# 移近后的两翼可由资源点前沿直接进攻；中央仍需再推进一段。
+		var facility: AIFacility
+		for target: AIFacility in level.get_facility_targets():
+			if target.facility_id == id:
+				facility = target
+		var support_range: float = minf(level.normal_weapon_profile.attack_range,
+			preload("res://resources/weapons/scatter_spore.tres").attack_range)
+		if facility.is_alive() and support.distance_to(facility.global_position) > support_range:
+			_firing_points.append(firing_point)
+			if not await _build(level, firing_point):
+				failures.append("route %s could not build firing point for %s" % [order, id])
 				break
-		if not await _build(level, firing_point):
-			failures.append("route %s could not build firing point at %s" % [order, id])
-			break
-		level.prioritize_facility(id)
-		_actions.priority_targets += 1
+		if facility.is_alive():
+			level.prioritize_facility(id)
+			if level.combat_targeting_system.get_priority_target() == facility:
+				_actions.priority_targets += 1
+			else:
+				failures.append("route %s could not prioritize %s after building its frontier" % [order, id])
 		var destroyed: bool = false
 		var wait_started: float = level.elapsed_seconds
 		var next_log: float = wait_started + 30
@@ -120,6 +129,8 @@ func _play(order: Array[StringName]) -> void:
 		failures.append("route %s did not win" % [order])
 	if not bool(ledger.get("balanced", false)):
 		failures.append("route %s resource ledger diverged" % [order])
+	if int(level.wave_flow.get_snapshot().get("spawned", 0)) == 0:
+		failures.append("route %s bypassed all enemy production" % [order])
 	print("SECOND_LEVEL_ROUTE_RESULT ", JSON.stringify({"order": order, "result": result, "actions": _actions,
 		"production": level.wave_flow.get_snapshot(), "ledger": ledger}))
 	_completed_routes += 1

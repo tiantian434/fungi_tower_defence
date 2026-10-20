@@ -50,7 +50,12 @@ func _dispose(level: ThirdLevel) -> void:
 
 
 func _initial_and_collection() -> void:
+	var defaults := ExplorationProductionProfile.new()
+	_check(defaults.source_stagger_seconds == 6.0 and defaults.is_valid(),
+		"third-level profile inherits the shared offset and retains its six-second default")
 	var level: ThirdLevel = await _fresh()
+	_check(level.wave_flow.profile.source_stagger_seconds == 6.0,
+		"saved third-level production keeps its original source offset")
 	var controller: FragmentCollectionController = level.fragment_collection
 	controller.set_process(false)
 	var targets: Array[MemoryFragment] = level.get_fragment_targets()
@@ -59,6 +64,9 @@ func _initial_and_collection() -> void:
 	_check(level.get_node("World/Remains").get_children().map(func(c: Node) -> int: return c.total_nutrition) == [80, 80, 80, 120], "four planned large carcasses")
 	_check(targets.size() == 3 and targets.all(func(f: MemoryFragment) -> bool: return f.collection_seconds == 5), "three visible unique five-second objectives")
 	_check(targets.all(func(f: MemoryFragment) -> bool: return f.is_visible_in_tree()), "all objectives visible before exploration")
+	_check(targets.all(func(f: MemoryFragment) -> bool:
+		return level.terrain_navigation.is_point_walkable(f.global_position, BasicEnemy.NAVIGATION_CLEARANCE)),
+		"closer fragments stay outside terrain obstacles")
 	_check(level.compact_hud.wave_button.text == "收集碎片 0/3", "compact interface uses fragment objective")
 	level.compact_hud.open_page(&"wave")
 	_check(level.compact_hud._drawer_title.text == "碎片与来袭", "objective drawer retains existing interface style")
@@ -116,8 +124,8 @@ func _initial_and_collection() -> void:
 func _production() -> void:
 	var level: ThirdLevel = await _fresh()
 	var flow: ExplorationProductionController = level.wave_flow
-	_check(flow.profile.preparation_seconds == 25 and flow.profile.cycle_seconds == 30, "third-level production timings independent of second level")
-	_check(flow.profile.is_valid() and flow.profile.max_alive_per_source == 12, "finite pressure cap is configured")
+	_check(flow.profile.preparation_seconds == 25 and flow.profile.cycle_seconds == 40, "third-level production timings independent of second level")
+	_check(flow.profile.is_valid() and flow.profile.max_alive_per_source == 6, "finite pressure cap is configured")
 	var kinds: Array[int] = []
 	for index: int in range(3):
 		for scene: PackedScene in flow.profile.get_exploration_scenes(999, 1, index, 0):

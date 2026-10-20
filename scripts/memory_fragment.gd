@@ -8,6 +8,7 @@ extends Node2D
 @export_range(0.1, 60.0) var collection_seconds: float = 5.0
 @export var memory_image: Texture2D
 @export var accent: Color = Color("d7ac62")
+@export var label_offset: Vector2 = Vector2(-110, 48)
 
 var progress_seconds: float = 0.0
 var collected: bool = false
@@ -20,6 +21,7 @@ var _paper: StyleBoxTexture = ArtUI.paper(ArtUI.UI + "框底(1).png", 0)
 func _ready() -> void:
 	if is_instance_valid(_label):
 		_label.theme = ArtUI.theme(18)
+		_label.position = label_offset
 	if is_instance_valid(_picture) and memory_image != null:
 		_picture.texture = memory_image
 		_picture.scale = Vector2.ONE * 62.0 / maxf(memory_image.get_width(), memory_image.get_height())

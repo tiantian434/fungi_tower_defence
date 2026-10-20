@@ -24,7 +24,7 @@ func _initialize() -> void:
 
 
 func _run() -> void:
-	var baseline_children: int = root.get_child_count()
+	var initial_root_children: Array[Node] = root.get_children()
 	root.size = Vector2i(1200, 800)
 	_test_resources()
 	await _test_manual_pause_and_timer()
@@ -34,7 +34,7 @@ func _run() -> void:
 	await _test_reentrant_start_and_completion()
 	await _test_synchronous_completion()
 	await _test_configuration_guards()
-	_check(root.get_child_count() == baseline_children, "Flow fixtures dispose all nodes while preserving the display autoload")
+	_check(root.get_children() == initial_root_children, "Flow fixtures dispose all added nodes and preserve autoloads")
 	print("STAGE11_FLOW_TEST_RESULT ", JSON.stringify({"checks": checks,
 		"failures": failures, "evidence": evidence,
 		"fixture": "real EnemySpawner and enemy scenes; shortened intervals, stationary actors, direct damage; no playable-level balance claim"}))
@@ -43,8 +43,8 @@ func _run() -> void:
 
 func _test_resources() -> void:
 	var flow := FirstLevelFlow.new()
-	_check(flow.waves.size() == FirstLevelFlow.WAVE_TOTAL and flow.preparation_seconds == 15.0,
-		"Formal flow exports three waves and two 15-second preparation intervals")
+	_check(flow.waves.size() == FirstLevelFlow.WAVE_TOTAL and flow.preparation_seconds == 12.0,
+		"Formal flow exports three waves and two 12-second preparation intervals")
 	_check(flow.process_mode == Node.PROCESS_MODE_PAUSABLE, "Flow countdown uses pausable processing")
 	var total: int = 0
 	var counts: Array[Array] = []
@@ -80,7 +80,7 @@ func _test_resources() -> void:
 			total += amount
 		schedules.append({"wave": index + 1, "spawn_span_seconds": span - last_gap,
 			"anchors": points.keys()})
-	_check(total == 35, "Formal three waves plan exactly 35 individuals without multiplying swarm groups")
+	_check(total == 35 and flow.get_total_planned_count() == total, "Formal three waves plan exactly 35 individuals without multiplying swarm groups")
 	evidence["resource_counts"] = counts
 	evidence["initial_schedules"] = schedules
 	flow.free()
@@ -209,9 +209,9 @@ func _test_manual_pause_and_timer() -> void:
 	_check(flow.get_snapshot()["total_defeated"] == 1 and flow.get_snapshot()["state"] == "fighting",
 		"Cumulative normal kills advance during combat before the final death")
 	_kill_active(fixture)
-	_check(flow.get_snapshot()["state"] == "preparation" and flow.get_snapshot()["preparation_remaining"] == 15.0
-		and flow.get_snapshot()["can_start"], "Normal clear begins a 15-second preparation with early start")
-	flow._process(14.0)
+	_check(flow.get_snapshot()["state"] == "preparation" and flow.get_snapshot()["preparation_remaining"] == 12.0
+		and flow.get_snapshot()["can_start"], "Normal clear begins a 12-second preparation with early start")
+	flow._process(11.0)
 	var remaining: float = flow.get_snapshot()["preparation_remaining"]
 	paused = true
 	flow._process(100.0)
@@ -250,7 +250,7 @@ func _test_three_waves_and_candidate() -> void:
 		_check(snapshot["active"] == 0 and snapshot["unspawned"] == 0
 			and snapshot["defeated"] == snapshot["planned"], "Every accepted clear has all planned normal deaths")
 		if index < FirstLevelFlow.WAVE_TOTAL - 1:
-			_check(snapshot["state"] == "preparation" and snapshot["preparation_remaining"] == 15.0
+			_check(snapshot["state"] == "preparation" and snapshot["preparation_remaining"] == 12.0
 				and fixture["candidates"].is_empty(), "First two clears prepare without a victory candidate")
 	var final := flow.get_snapshot()
 	_check(final["state"] == "victory_candidate" and final["total_defeated"] == 35
@@ -406,7 +406,7 @@ func _test_reentrant_start_and_completion() -> void:
 			clicked[0] = true
 			flow._process(100.0)
 			clicks.append(flow.begin_next_wave()))
-	flow._process(20.0)
+	flow._process(12.0)
 	_check(fixture["starts"].size() == 2 and clicked[0] and not clicks.has(true),
 		"Timer expiry plus synchronous repeated clicks starts only one next batch")
 	await _destroy(fixture)

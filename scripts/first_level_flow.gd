@@ -13,7 +13,7 @@ const WAVE_TOTAL: int = 3
 	preload("res://resources/first_level_waves/wave_02.tres"),
 	preload("res://resources/first_level_waves/wave_03.tres"),
 ]
-@export var preparation_seconds: float = 15.0
+@export var preparation_seconds: float = 12.0
 
 var _spawner: EnemySpawner
 var _bindings: Array[Dictionary] = []
@@ -251,11 +251,19 @@ func get_snapshot() -> Dictionary:
 	}
 
 
-func get_planned_total() -> int:
+func get_total_planned_count() -> int:
 	var total: int = 0
 	for wave: FirstLevelWave in waves:
-		total += _get_wave_count(wave)
+		var count: int = _get_wave_count(wave)
+		if count <= 0:
+			return 0
+		total += count
 	return total
+
+
+func get_planned_total() -> int:
+	# 兼容已有观察面板和验收入口，汇总与配置有效性检查共用同一实现。
+	return get_total_planned_count()
 
 
 func stop(reason: StringName) -> void:
