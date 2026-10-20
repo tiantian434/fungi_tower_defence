@@ -3,6 +3,7 @@ extends SceneTree
 
 const PAUSE_SCRIPT: Script = preload("res://scripts/global_pause_controller.gd")
 const HUD_SCENE: PackedScene = preload("res://scenes/ui/first_level_hud.tscn")
+const WAVE_TOTAL: int = FirstLevelFlow.WAVE_TOTAL
 
 class SimulationProbe extends Node:
 	var process_steps: int = 0
@@ -65,6 +66,7 @@ func _initialize() -> void:
 
 
 func _run() -> void:
+	var initial_root_children: int = root.get_child_count()
 	root.size = Vector2i(1200, 920)
 	_create_fixture()
 	await _frames(12)
@@ -74,7 +76,7 @@ func _run() -> void:
 	await _test_exit_unpauses()
 	_fixture.free()
 	await _frames(2)
-	_check(not paused and root.get_child_count() == 0, "Fixture cleanup leaves no paused tree or orphan UI")
+	_check(not paused and root.get_child_count() == initial_root_children, "Fixture cleanup leaves no paused tree or orphan UI")
 	print("STAGE11_PAUSE_UI_TEST_RESULT ", JSON.stringify({"checks": checks,
 		"failures": failures, "evidence": evidence,
 		"scope": "standalone SceneTree pause, sibling process/physics/Timer/Tween, actual viewport GUI events and copied result snapshots"}))
@@ -242,7 +244,7 @@ func _test_ui_intents_and_snapshot_copy() -> void:
 	_click(_hud.restart_button.get_global_rect().get_center())
 	_check(int(_intents["pause"]) == 2 and int(_intents["restart"]) == 1 and paused,
 		"Pause and restart buttons accept actual pointer clicks while SceneTree is paused")
-	var actual: Dictionary = {"victory": true, "reached_wave": 6, "completed_waves": 6,
+	var actual: Dictionary = {"victory": true, "reached_wave": WAVE_TOTAL, "completed_waves": WAVE_TOTAL,
 		"total_recovered": 173, "stage_name": "成形", "mature_organs": 5,
 		"core_health": 63.5, "elapsed_seconds": 245.9,
 		"audit": {"arrival_ids": ["fixture:arrival:1"]}}
@@ -253,10 +255,10 @@ func _test_ui_intents_and_snapshot_copy() -> void:
 	_hud.show_colony({"core_health": 0, "core_max_health": 100, "nutrition": 0,
 		"total_recovered": 999, "stage_name": "初生", "elapsed_seconds": 0})
 	_hud.show_flow({"state": &"interrupted", "wave_index": 1, "completed_waves": 0,
-		"wave_total": 6, "can_start": true})
+		"wave_total": WAVE_TOTAL, "can_start": true})
 	_check(_hud.result_panel.visible and _hud.result_title.text.contains("第一章完成"), "Settlement is shown from the captured victory flag")
-	_check(_hud.result_left_label.text.contains("到达波次：6 / 6")
-		and _hud.result_left_label.text.contains("完成波次：6 / 6")
+	_check(_hud.result_left_label.text.contains("到达波次：%d / %d" % [WAVE_TOTAL, WAVE_TOTAL])
+		and _hud.result_left_label.text.contains("完成波次：%d / %d" % [WAVE_TOTAL, WAVE_TOTAL])
 		and _hud.result_left_label.text.contains("173 创作能量")
 		and _hud.result_left_label.text.contains("成形"), "Settlement shows actual reached/completed waves, recovered nutrition and stage")
 	_check(_hud.result_right_label.text.contains("设施：5")
@@ -275,12 +277,12 @@ func _test_ui_intents_and_snapshot_copy() -> void:
 	await _frames(2)
 	_check(int(_intents["restart"]) == 2 and paused and _simulation_snapshot() == frozen,
 		"Actual settlement restart click works while paused and HUD alone changes no simulation")
-	_hud.show_result({"victory": false, "reached_wave": 3, "completed_waves": 2,
+	_hud.show_result({"victory": false, "reached_wave": WAVE_TOTAL, "completed_waves": WAVE_TOTAL - 1,
 		"total_recovered": 45, "stage_name": "扩张", "mature_organs": 2,
 		"core_health": 0, "elapsed_seconds": 75})
 	_check(_hud.result_title.text == "小画家倒下了 · 本次挑战失败"
-		and _hud.result_left_label.text.contains("到达波次：3 / 6")
-		and _hud.result_left_label.text.contains("完成波次：2 / 6")
+		and _hud.result_left_label.text.contains("到达波次：%d / %d" % [WAVE_TOTAL, WAVE_TOTAL])
+		and _hud.result_left_label.text.contains("完成波次：%d / %d" % [WAVE_TOTAL - 1, WAVE_TOTAL])
 		and _hud.result_right_label.text.contains("生命：0"), "Defeat settlement replaces the previous result with its own captured values")
 	_hud.clear_result()
 	_hud.clear_result()
@@ -293,7 +295,7 @@ func _test_ui_intents_and_snapshot_copy() -> void:
 		and not _hud.is_pointer_over_panel(Vector2(620, 380)),
 		"Fresh preparation restores controls and releases the old result rectangle")
 	_hud.show_flow({"state": &"preparation", "wave_index": 2, "completed_waves": 2,
-		"wave_total": 6, "planned": 7, "spawned": 7, "defeated": 7, "active": 0,
+		"wave_total": WAVE_TOTAL, "planned": 7, "spawned": 7, "defeated": 7, "active": 0,
 		"unspawned": 0, "preparation_remaining": 8.3, "can_start": true,
 		"next_title": "两翼来袭", "next_direction": "左右两侧", "total_defeated": 12})
 	_check(_hud.start_button.text == "开始第 3 波"
@@ -318,7 +320,7 @@ func _test_exit_unpauses() -> void:
 
 func _flow_snapshot() -> Dictionary:
 	return {"state": &"initial_preparation", "wave_index": 0, "completed_waves": 0,
-		"wave_total": 6, "planned": 0, "spawned": 0, "defeated": 0, "active": 0,
+		"wave_total": WAVE_TOTAL, "planned": 0, "spawned": 0, "defeated": 0, "active": 0,
 		"unspawned": 0, "preparation_remaining": 0.0, "can_start": true,
 		"next_title": "首波试探", "next_direction": "左侧", "total_defeated": 0}
 

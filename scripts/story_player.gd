@@ -160,6 +160,14 @@ func _input(event: InputEvent) -> void:
 	if GameDisplayManager.is_display_shortcut(event):
 		return
 	if event is InputEventKey and event.pressed and not event.echo:
+		var focused: Control = get_viewport().gui_get_focus_owner()
+		# 音量滑杆的方向键和按钮的空格先交给 GUI，避免调音量时退回上一幕，
+		# 或按空格静音时意外跳过剧情。其余剧情快捷键保持全局可用。
+		if is_instance_valid(focused) and is_ancestor_of(focused):
+			if focused is Range and event.keycode in [KEY_LEFT, KEY_RIGHT, KEY_UP, KEY_DOWN, KEY_HOME, KEY_END, KEY_PAGEUP, KEY_PAGEDOWN]:
+				return
+			if focused is BaseButton and event.keycode == KEY_SPACE:
+				return
 		if event.keycode == KEY_ESCAPE:
 			finish()
 		elif event.keycode == KEY_SPACE:
@@ -167,7 +175,8 @@ func _input(event: InputEvent) -> void:
 		elif event.keycode == KEY_LEFT:
 			previous()
 		elif event.keycode == KEY_P:
-			_toggle_play()
+			if not _play.disabled:
+				_toggle_play()
 		elif event.keycode in [KEY_TAB, KEY_ENTER, KEY_KP_ENTER, KEY_UP, KEY_DOWN, KEY_RIGHT]:
 			# 留给当前剧情按钮的键盘导航；其他游戏快捷键由剧情层拦截。
 			return

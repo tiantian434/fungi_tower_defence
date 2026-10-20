@@ -28,68 +28,69 @@ grow_vertical = 2
 custom_minimum_size = Vector2(720, 0)
 layout_mode = 2
 
-[node name="Scroll" type="ScrollContainer" parent="Overlay/Recap/Paper"]
-custom_minimum_size = Vector2(0, 530)
-layout_mode = 2
-horizontal_scroll_mode = 0
-
-[node name="Content" type="VBoxContainer" parent="Overlay/Recap/Paper/Scroll"]
+[node name="Content" type="VBoxContainer" parent="Overlay/Recap/Paper"]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 20
 
-[node name="Title" type="Label" parent="Overlay/Recap/Paper/Scroll/Content"]
+[node name="Title" type="Label" parent="Overlay/Recap/Paper/Content"]
 layout_mode = 2
 text = "重新拾起的三段记忆"
 horizontal_alignment = 1
 
-[node name="Hint" type="Label" parent="Overlay/Recap/Paper/Scroll/Content"]
+[node name="Hint" type="Label" parent="Overlay/Recap/Paper/Content"]
 layout_mode = 2
 text = "那些微小的坚持，慢慢连成了自己的世界。"
 horizontal_alignment = 1
 autowrap_mode = 3
 
-[node name="Memories" type="VBoxContainer" parent="Overlay/Recap/Paper/Scroll/Content"]
+[node name="Scroll" type="ScrollContainer" parent="Overlay/Recap/Paper/Content"]
+custom_minimum_size = Vector2(0, 360)
 layout_mode = 2
+horizontal_scroll_mode = 0
+
+[node name="Memories" type="VBoxContainer" parent="Overlay/Recap/Paper/Content/Scroll"]
+layout_mode = 2
+size_flags_horizontal = 3
 theme_override_constants/separation = 18
 
-[node name="First" type="VBoxContainer" parent="Overlay/Recap/Paper/Scroll/Content/Memories"]
+[node name="First" type="VBoxContainer" parent="Overlay/Recap/Paper/Content/Scroll/Memories"]
 layout_mode = 2
 
-[node name="Name" type="Label" parent="Overlay/Recap/Paper/Scroll/Content/Memories/First"]
+[node name="Name" type="Label" parent="Overlay/Recap/Paper/Content/Scroll/Memories/First"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 25
 text = "初次创作"
 
-[node name="Text" type="Label" parent="Overlay/Recap/Paper/Scroll/Content/Memories/First"]
+[node name="Text" type="Label" parent="Overlay/Recap/Paper/Content/Scroll/Memories/First"]
 layout_mode = 2
 autowrap_mode = 3
 
-[node name="Second" type="VBoxContainer" parent="Overlay/Recap/Paper/Scroll/Content/Memories"]
+[node name="Second" type="VBoxContainer" parent="Overlay/Recap/Paper/Content/Scroll/Memories"]
 layout_mode = 2
 
-[node name="Name" type="Label" parent="Overlay/Recap/Paper/Scroll/Content/Memories/Second"]
+[node name="Name" type="Label" parent="Overlay/Recap/Paper/Content/Scroll/Memories/Second"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 25
 text = "坚持创作"
 
-[node name="Text" type="Label" parent="Overlay/Recap/Paper/Scroll/Content/Memories/Second"]
+[node name="Text" type="Label" parent="Overlay/Recap/Paper/Content/Scroll/Memories/Second"]
 layout_mode = 2
 autowrap_mode = 3
 
-[node name="Third" type="VBoxContainer" parent="Overlay/Recap/Paper/Scroll/Content/Memories"]
+[node name="Third" type="VBoxContainer" parent="Overlay/Recap/Paper/Content/Scroll/Memories"]
 layout_mode = 2
 
-[node name="Name" type="Label" parent="Overlay/Recap/Paper/Scroll/Content/Memories/Third"]
+[node name="Name" type="Label" parent="Overlay/Recap/Paper/Content/Scroll/Memories/Third"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 25
 text = "自己的选择"
 
-[node name="Text" type="Label" parent="Overlay/Recap/Paper/Scroll/Content/Memories/Third"]
+[node name="Text" type="Label" parent="Overlay/Recap/Paper/Content/Scroll/Memories/Third"]
 layout_mode = 2
 autowrap_mode = 3
 
-[node name="PaintingButton" type="Button" parent="Overlay/Recap/Paper/Scroll/Content"]
+[node name="PaintingButton" type="Button" parent="Overlay/Recap/Paper/Content"]
 custom_minimum_size = Vector2(250, 52)
 layout_mode = 2
 size_flags_horizontal = 4

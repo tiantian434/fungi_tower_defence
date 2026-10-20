@@ -27,6 +27,7 @@ func _initialize() -> void:
 
 
 func _run() -> void:
+	var initial_root_children: int = root.get_child_count()
 	root.size = Vector2i(1200, 800)
 	root.physics_object_picking = true
 	await _test_natural_route_and_input()
@@ -34,7 +35,7 @@ func _run() -> void:
 	await _test_reversed_source_and_supply_loss()
 	await _test_cancellation_and_old_callbacks()
 	await _test_restart_with_paid_packet()
-	_check(root.get_child_count() == 0, "Connection integration teardown leaves no scene objects")
+	_check(root.get_child_count() == initial_root_children, "Connection integration teardown leaves no scene objects")
 	print("CONNECTION_INTEGRATION_TEST_RESULT ", JSON.stringify({
 		"checks": checks, "failures": failures, "conservation_checks": conservation_checks,
 		"cases": case_results,

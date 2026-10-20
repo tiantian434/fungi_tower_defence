@@ -14,6 +14,16 @@ New-Item -ItemType Directory -Force -Path './exports/Windows' | Out-Null
 
 当前电脑的匹配模板安装在 `%APPDATA%/Godot/export_templates/4.7.2.stable/`；预设使用 Godot 的标准模板查找方式，没有把本机绝对模板路径写进仓库。
 
+也可以使用包含验包的构建脚本：
+
+```powershell
+./docs/release/build_windows.ps1 -GodotPath 'C:/实际路径/Godot控制台程序.exe'
+```
+
+它导出 EXE/PCK，将外部资源检查脚本放在独立目录执行，确认四段动态剧情、纹理、音乐音效和四个主线场景均可从实际 PCK 读取；再启动发布 EXE，生成 `dist/Huisheng-0.1.0-jam-Windows.zip`，解压到新目录校对文件哈希并再次启动。日志、独立测试设置和构建哈希保存在 `.artifact_work/release_delivery/时间戳/`，不会进入玩家压缩包。压缩包仅包含 EXE、PCK 和游玩说明。
+
+自动检查使用无画面模式验证资源完整性和程序启动，不能替代真实画面的可读性、音量听感、手动完整通关及另一台电脑的兼容性检查。深入资源检查使用同版本 Godot 引擎加载发布 PCK；发布 EXE 本身单独验证启动，不声称通过它运行编辑器测试脚本。
+
 图标采用工程自己的 `icon.svg`。项目版本允许文字后缀；Windows 文件属性使用四段数字版本 `0.1.0.0`。发布程序不附带控制台窗口。
 
 ## 包内容

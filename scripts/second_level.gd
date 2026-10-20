@@ -12,6 +12,7 @@ var _restart_pending: bool = false
 var _attack_preview: Dictionary = {}
 var _objective_overlay: Node2D
 var _preview_font: SystemFont
+var _frontline_tutorial_shown: bool = false
 
 
 func _ready() -> void:
@@ -232,6 +233,20 @@ func _on_second_recycling(_in_transit: int, delivered: int, _interrupted: int) -
 
 func _on_second_recovery(total: int, _products: int) -> void:
 	if total > 0: first_guide.record_event(&"nutrition_returned")
+
+
+## 沿用实际建造完成回调，只在新炮台真正覆盖存活终端时提示集中火力。
+func _on_organ_matured(task_id: int, host: HyphaNode,
+		organ: AttackOrgan, new_weapon: SporeWeapon) -> void:
+	super._on_organ_matured(task_id, host, organ, new_weapon)
+	if not _second_ready or _frontline_tutorial_shown or not is_instance_valid(organ) or not is_instance_valid(new_weapon):
+		return
+	for facility: AIFacility in get_facility_targets():
+		if facility.is_alive() and organ.global_position.distance_to(facility.global_position) <= new_weapon.attack_range:
+			_frontline_tutorial_shown = true
+			first_guide.record_event(&"frontline_ready")
+			hud.show_notice("炮台已能攻击%s。点击该终端集中火力，再次点击可取消优先。" % facility.display_name)
+			return
 
 
 func _refresh_second_hud() -> void:

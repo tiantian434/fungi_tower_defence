@@ -24,6 +24,7 @@ func _initialize() -> void:
 
 
 func _run() -> void:
+	var initial_root_children: int = root.get_child_count()
 	_test_bidirectional_units_and_replay()
 	_test_fifo_under_late_arrivals()
 	_test_head_cancellation()
@@ -40,7 +41,7 @@ func _run() -> void:
 	_test_reentrant_reset_during_drain()
 	_test_ring_boundary_model()
 	_free_fixtures()
-	_check(root.get_child_count() == 0, "Contract teardown leaves no fixture nodes")
+	_check(root.get_child_count() == initial_root_children, "Contract teardown leaves no fixture nodes")
 	print("TRAFFIC_CONTRACT_TEST_RESULT ", JSON.stringify({
 		"checks": checks, "failures": failures, "cases": case_results,
 		"scope": "6.2_module_contract", "packet_integration": false,

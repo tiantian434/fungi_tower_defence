@@ -63,13 +63,13 @@ func _play(order: Array[StringName]) -> void:
 	_support_points.clear()
 	_firing_points.clear()
 	_actions = {"remote_builds": 0, "local_builds": 0, "frontline_rebuilds": 0,
-		"repairs": 0, "specializations": 0}
+		"repairs": 0, "specializations": 0, "priority_targets": 0}
 	await _frames(4)
 	print("SECOND_LEVEL_ROUTE_START ", order)
 	for id: StringName in order:
 		if not level.get_result_snapshot().is_empty(): break
 		level.choose_organ(&"attack")
-		# 自动选敌优先保护前沿，空闲射击设施；优先目标按钮由独立功能测试覆盖。
+		# 支援炮台保护路线；火力点成熟后使用玩家可点击的设施优先目标，避免一直追打新一轮羊群。
 		# 喷壶改装会缩短射程至145px；支援点必须仍能保护前方花朵，不能沿用普通铅笔的178px距离。
 		var support: Vector2 = Vector2(355, 535) if id == &"left" else (
 			Vector2(850, 510) if id == &"right" else (Vector2(445, 355) if order[0] == &"left" else Vector2(775, 385)))
@@ -90,6 +90,8 @@ func _play(order: Array[StringName]) -> void:
 		if not await _build(level, firing_point):
 			failures.append("route %s could not build firing point at %s" % [order, id])
 			break
+		level.prioritize_facility(id)
+		_actions.priority_targets += 1
 		var destroyed: bool = false
 		var wait_started: float = level.elapsed_seconds
 		var next_log: float = wait_started + 30

@@ -6,9 +6,9 @@
 script = ExtResource("1_profile")
 preparation_seconds = 30.0
 source_activation_interval_seconds = 20.0
-cycle_seconds = 25.0
+cycle_seconds = 30.0
 warning_seconds = 5.0
-destruction_grace_seconds = 20.0
+destruction_grace_seconds = 35.0
 advanced_after_seconds = 90.0
 full_after_seconds = 240.0
 max_alive_per_source = 12

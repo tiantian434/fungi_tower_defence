@@ -421,7 +421,7 @@ func _build_help_page() -> void:
 	var enemy_details: VBoxContainer = page.disclosure("敌人与应对")
 	page.text(GameplayCopy.enemy_guide(WorldArt.find_theme(_level).chapter), enemy_details)
 	if _level.has_method("get_facility_targets"):
-		page.text(GameplayCopy.TERMINAL_GUIDE, enemy_details)
+		page.text(GameplayCopy.TERMINAL_GUIDE + "\n在终端射程旁建好炮台后，点击终端可集中火力；再次点击取消优先，恢复自动选敌。", enemy_details)
 	page.heading("建造与运营")
 	page.text("G 延伸花径 · B 远处建造 · C 原位建造\nO 切换设施 · L 连接花朵\nT 目标改向 · M 搬迁 · Y 取消搬迁准备")
 	page.heading("任务与修复")
@@ -429,7 +429,7 @@ func _build_help_page() -> void:
 	page.heading("全局")
 	page.text("WASD 移动视角 · 按住鼠标中键拖动\n滚轮围绕鼠标缩放 · Home / 视角复位\n触控板：双指平移、捏合缩放\nSpace 规划暂停中仍可移动镜头与查看预览。")
 	page.text("Space 全局暂停 / 恢复 · R 重开\n右键 / Esc 退出当前操作" +
-		("\nF5–F10 各阶段开发演示" if _level.has_method("open_development_demo") else ""))
+		("\nF5–F10 各阶段开发演示" if _development_enabled() else ""))
 	var details: VBoxContainer = page.disclosure("首关地图与资源提示")
 	for path: String in ["World/FirstResourceGuide/Hint", "World/SecondResourceGuide/Hint", "World/BypassLabel"]:
 		var label: Label = _level.get_node_or_null(path) as Label

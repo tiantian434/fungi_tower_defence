@@ -48,11 +48,23 @@ func _run() -> void:
 	for dimensions: Vector2i in [Vector2i(1280, 720), Vector2i(1920, 1080)]:
 		root.size = dimensions
 		await _frames(7)
-		ending.recap_scroll.ensure_control_visible(ending.painting_button)
-		await _frames(3)
 		_check(root.get_visible_rect().encloses(ending.painting_button.get_global_rect()), "recap next button is reachable at %s" % dimensions)
 		_check(root.get_visible_rect().encloses(ending.recap_scroll.get_global_rect()), "recap scroll remains on screen at %s" % dimensions)
+		_check(not ending.recap_scroll.get_global_rect().intersects(ending.painting_button.get_global_rect()), "recap keeps its primary action outside scrolling text at %s" % dimensions)
 		await _capture("memories_%dx%d" % [dimensions.x, dimensions.y])
+	# 长文本只用于检查布局韧性；正式剧情仍保留原有三段文字。
+	var first_memory: Label = ending.memories.get_child(0).get_node("Text")
+	first_memory.text = fragment_texts[0].repeat(25)
+	await _frames(6)
+	_check(ending.recap_scroll.scroll_vertical == 0, "long recap begins with the first memory rather than the final action")
+	var primary_position: Vector2 = ending.painting_button.global_position
+	ending.recap_scroll.scroll_vertical = 10000
+	await _frames(3)
+	_check(ending.recap_scroll.scroll_vertical > 0 and ending.painting_button.global_position == primary_position,
+		"reading long memories never moves the continuation button")
+	first_memory.text = fragment_texts[0]
+	ending.recap_scroll.scroll_vertical = 0
+	await _frames(3)
 	_click(ending.painting_button.get_global_rect().get_center())
 	await _frames(80)
 	_check(ending.showcase.is_visible_in_tree() and not ending.recap.visible, "actual recap click opens the player's painting")
@@ -72,9 +84,9 @@ func _run() -> void:
 	_click(level.flow_hud.result_continue_button.get_global_rect().get_center())
 	await _frames(5)
 	_check(ending.showcase.is_visible_in_tree() and ending.summary_button.is_visible_in_tree(), "actual summary click reopens this painting")
-	_click(ending.summary_button.get_global_rect().get_center())
+	_key(KEY_ESCAPE)
 	await _frames(5)
-	_check(level.flow_hud.result_panel.is_visible_in_tree() and not ending.visible, "actual return click restores summary")
+	_check(level.flow_hud.result_panel.is_visible_in_tree() and not ending.visible, "Escape returns from painting replay to summary")
 	_check(level.elapsed_seconds == frozen.elapsed_seconds and level.fragment_collection.get_snapshot() == frozen.fragments, "ending navigation never resumes the simulation")
 	_click(level.compact_hud.level_menu.result_title_button.get_global_rect().get_center())
 	await _frames(6)

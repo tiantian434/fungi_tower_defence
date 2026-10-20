@@ -66,7 +66,8 @@ func _initial_and_real_attack() -> void:
 			and level.wave_flow.profile.preparation_seconds == configured.preparation_seconds \
 			and level.wave_flow.profile.cycle_seconds == configured.cycle_seconds,
 		"production uses an isolated copy of the current editable second-level timing configuration")
-	_check(level.wave_flow.profile.destruction_grace_seconds == 20, "destruction provides a configured twenty-second grace")
+	_check(level.wave_flow.profile.destruction_grace_seconds >= level.wave_flow.profile.cycle_seconds,
+		"destruction grants at least one full production cycle to move the frontier")
 	_check(level.get_facility_targets().map(func(ai: AIFacility) -> int: return ai.health) == [120, 180, 240],
 		"three stable facilities retain their independent initial health")
 	_check(level.get_node("World/Remains").get_child_count() == 2, "two eighty-nutrient sources are present")
