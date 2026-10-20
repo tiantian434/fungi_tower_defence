@@ -54,7 +54,7 @@ func _run() -> void:
 	_check(level.construction_coordinator.get_snapshot().entries.size() == count,
 		"clicking an open drawer cannot place a construction target behind it")
 	ui.close_drawer()
-	_click(Vector2(330, 395))
+	_click(level.get_canvas_transform() * Vector2(330, 395))
 	await _frames(3)
 	var id: String = String(level.construction_coordinator.get_snapshot().selected_id)
 	_check(not id.is_empty() and level.construction_coordinator.get_snapshot().entries.size() == 1,
@@ -199,7 +199,7 @@ func _test_cultivation_and_supply() -> void:
 	_check(level.supply_system.get_in_transit_count() > before, "N still dispatches real supply while details are closed")
 	await _fresh()
 	_key(KEY_G)
-	_click(Vector2(330, 395))
+	_click(level.get_canvas_transform() * Vector2(330, 395))
 	_key(KEY_ESCAPE)
 	var target: HyphaNode
 	for frame: int in range(1800):

@@ -23,12 +23,23 @@ var _mature_hosts: Dictionary = {}
 
 
 func _initialize() -> void:
+	node_added.connect(func(node: Node) -> void:
+		if node is GameAudio:
+			node.preferences_path = "res://.artifact_work/third-playthrough-audio.cfg"
+			node.effects_volume = 0.0
+			node.music_volume = 0.0
+		elif node is GameDisplayManager:
+			node.preferences_path = "res://.artifact_work/third-playthrough-display.cfg"
+		elif node is CampaignNavigator:
+			node.progress_store = CampaignProgressStore.new("res://.artifact_work/third-playthrough-progress.cfg"))
 	_run.call_deferred()
 
 
 func _run() -> void:
 	await _play([&"first_creation", &"persistence", &"own_choice"], false)
 	await _play([&"own_choice", &"persistence", &"first_creation"], true)
+	if records.size() != 2:
+		failures.append("both exploration routes must finish their result and resource checks")
 	print("THIRD_LEVEL_PLAYTHROUGH_RESULT ", JSON.stringify({"failures": failures, "routes": records}))
 	quit(0 if failures.is_empty() else 1)
 
@@ -98,7 +109,8 @@ func _submit(point: Vector2) -> bool:
 	_level.choose_organ(&"attack")
 	# 已形成的菌结仍保留时，通过真实C培育重建，不重复放置重叠的远处目标。
 	for node: Node2D in _level.network_system.get_registered_nodes():
-		if node is HyphaNode and node.is_functional() and point.distance_to(node.global_position) < 24:
+		if node is HyphaNode and node.is_functional() \
+				and point.distance_to(node.global_position) <= CultivationInputController.OVERLAP_RADIUS:
 			input.exit_remote_placement_mode()
 			input.select_node(node)
 			var local_accepted: bool = input.request_cultivation()

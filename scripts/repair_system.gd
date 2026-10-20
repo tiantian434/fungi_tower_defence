@@ -307,9 +307,20 @@ func advance(delta: float) -> void:
 		# 与预计的新生命值共用同一差值，避免 0.1 HP 尾数因浮点误差多报价一单位。
 		var unpaid_missing: float = maxf(missing - record.paid_heal_remaining, 0.0)
 		var next_health: float = minf(values[0] + step, values[1])
+		if next_health == values[0]:
+			# 已付尾数可能小于生命值的浮点精度；继续相减会在同一帧循环数万亿次。
+			# 只有整份剩余额度都无法改变生命时才耗尽尾数；微小帧时间不丢弃有效额度。
+			if values[0] + record.paid_heal_remaining == values[0]:
+				record.paid_heal_remaining = 0.0
+				_refresh_record(record)
+				if _current == record:
+					_publish_changed()
+			break
+		var next_time: float = maxf(remaining_time - step / HEALING_SPEED, 0.0)
+		var time_progressed: bool = next_time < remaining_time
 		record.paid_heal_remaining = maxf(values[1] - next_health - unpaid_missing, 0.0)
 		record.restored_health += step
-		remaining_time = maxf(remaining_time - step / HEALING_SPEED, 0.0)
+		remaining_time = next_time
 		var restored: float = float(record.target.call("heal", step))
 		if _current != record or not _record_is_active(record):
 			break
@@ -320,6 +331,8 @@ func advance(delta: float) -> void:
 		_refresh_record(record)
 		if _current == record:
 			_publish_changed()
+		if not time_progressed:
+			break
 	_advancing = false
 
 

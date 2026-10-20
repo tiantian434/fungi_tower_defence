@@ -118,7 +118,7 @@ func _pause_and_return() -> void:
 	level.growth_input_controller.exit_placement_mode()
 	await _frames(3)
 	var old_network: WeakRef = weakref(level.network_system)
-	_check(level.compact_hud.goal_label.text.contains("六波"), "first objective is visible in upper-left HUD")
+	_check(level.compact_hud.goal_label.text.contains("%d波" % FirstLevelFlow.WAVE_TOTAL), "current first-level objective is visible in upper-left HUD")
 	_click(level.compact_hud.menu_button.get_global_rect().get_center())
 	await _frames(3)
 	_check(layer.is_open() and paused, "real menu click freezes game with modal menu")

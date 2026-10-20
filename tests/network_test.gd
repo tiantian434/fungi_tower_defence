@@ -11,6 +11,7 @@ func _initialize() -> void:
 
 
 func _run() -> void:
+	var initial_root_children: int = root.get_child_count()
 	_test_registration()
 	_test_direct_and_same_node_routes()
 	_test_multi_hop_routes()
@@ -23,7 +24,7 @@ func _run() -> void:
 	_test_freed_objects()
 	_test_tree_exit()
 	_free_objects()
-	_check(root.get_child_count() == 0, "Test cleanup left nodes in the scene tree")
+	_check(root.get_child_count() == initial_root_children, "Test cleanup left nodes in the scene tree")
 	print("NETWORK_TEST_RESULT ", JSON.stringify({"checks": checks, "failures": failures}))
 	quit(0 if failures.is_empty() else 1)
 

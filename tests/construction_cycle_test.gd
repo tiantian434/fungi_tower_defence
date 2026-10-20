@@ -37,6 +37,7 @@ func _initialize() -> void:
 
 
 func _run() -> void:
+	var baseline_root_children: int = root.get_child_count()
 	root.size = Vector2i(1200, 800)
 	root.physics_object_picking = true
 	await _test_full_resource_to_defense_cycle()
@@ -47,7 +48,7 @@ func _run() -> void:
 		await _test_reset_before_deferred_handoff()
 		await _test_restart_with_paid_transport(false)
 		await _test_restart_with_paid_transport(true)
-	_check(root.get_child_count() == 0, "Construction cycle teardown removes all level objects")
+	_check(root.get_child_count() == baseline_root_children, "Construction cycle teardown removes all level objects and preserves display autoload")
 	print("CONSTRUCTION_CYCLE_TEST_RESULT ", JSON.stringify({
 		"checks": checks, "failures": failures, "conservation_checks": conservation_checks,
 		"milestones": milestones, "chain": chain_result,

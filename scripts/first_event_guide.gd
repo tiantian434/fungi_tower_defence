@@ -68,7 +68,7 @@ func record_event(event_id: StringName, facts: Dictionary = {}) -> void:
 	if not _seen_order.has(event_id):
 		_seen_order.append(event_id)
 	if is_enabled:
-		var entry: Dictionary = {"id": event_id, "key": event_key, "text": _message_for(event_id, facts)}
+		var entry: Dictionary = {"id": event_id, "key": event_key, "text": _message_for(event_id, facts), "order": _seen.size()}
 		_remove_obsolete_steps(event_id)
 		# 当前发生的危险和成长优先展示，不让旧的放置提示遮住已经发生的回收。
 		if not _current.is_empty() and _priority(event_id) > _priority(_current.get("id", &"")):
@@ -76,7 +76,10 @@ func record_event(event_id: StringName, facts: Dictionary = {}) -> void:
 				_pending.push_front(_current.duplicate())
 			_current.clear()
 		_pending.append(entry)
-		_pending.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return _priority(a.id) > _priority(b.id))
+		_pending.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+			var a_priority: int = _priority(a.id)
+			var b_priority: int = _priority(b.id)
+			return a_priority > b_priority if a_priority != b_priority else int(a.order) < int(b.order))
 		if _pending.size() > MAX_PENDING:
 			_pending.resize(MAX_PENDING)
 		_show_next()
@@ -149,8 +152,9 @@ func _event_key(event_id: StringName, facts: Dictionary) -> StringName:
 
 func _priority(event_id: StringName) -> int:
 	if event_id == &"network_broken": return 100
+	# 能力提示不能被一批不同敌人的首次出现挤出短队列；断路危险仍可立即抢占。
+	if event_id == &"stage_unlocked": return 95
 	if event_id in [&"armored", &"swarm", &"silk_gnawer", &"junction_gnawer"]: return 90
-	if event_id == &"stage_unlocked": return 70
 	if event_id in [&"fragment_collected", &"facility_destroyed", &"differentiated"]: return 60
 	return 20 + PROGRESS_STEPS.find(event_id)
 

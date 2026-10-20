@@ -62,6 +62,8 @@ func _run() -> void:
 	_test_edge_health_and_traversal()
 	_test_timed_healing_and_ceil_cost()
 	_test_fractional_final_unit()
+	_test_fractional_paid_credit_at_physics_rate()
+	_test_tiny_time_preserves_useful_paid_credit()
 	_test_pause_resume_and_delivery_ids()
 	_test_cancel_and_reset_settlement()
 	_test_disconnected_point_selection_and_pinning()
@@ -284,6 +286,44 @@ func _test_fractional_final_unit() -> void:
 		_close(fixture.target.health, 35.0, "Fractional healing reaches full")
 		_close(float(snapshot["restored_health"]), damage, "Fractional restoration is accounted", 0.00000001)
 		_destroy(fixture)
+
+
+func _test_fractional_paid_credit_at_physics_rate() -> void:
+	var fixture: Fixture = _fixture()
+	fixture.target.take_damage(11.2)
+	var task_id: int = fixture.repair.request_repair(fixture.target)
+	_check(fixture.repair.receive_nutrition(task_id, "physics-rate-fraction", 2),
+		"Fractional physics-rate repair receives its two quoted whole units")
+	# 60次1/60秒后，第一单位可能留下3.55e-15已付额度；它小于33.8HP的浮点精度。
+	for _frame: int in range(180):
+		fixture.repair.advance(1.0 / 60.0)
+	var snapshot: Dictionary = fixture.repair.get_task_snapshot()
+	_check(snapshot["state"] == &"completed", "Sub-ULP paid credit cannot stall ordinary physics steps")
+	_check(snapshot["consumed_nutrition"] == 2 and snapshot["buffered_nutrition"] == 0,
+		"Fractional repair consumes exactly the original whole-unit quote")
+	_close(fixture.target.health, 35.0, "Fractional physics-rate repair reaches full health")
+	_close(float(snapshot["restored_health"]), 11.2, "Fractional restoration remains accounted", 0.000000001)
+	_destroy(fixture)
+
+
+func _test_tiny_time_preserves_useful_paid_credit() -> void:
+	var fixture: Fixture = _fixture()
+	fixture.target.take_damage(20.0)
+	var task_id: int = fixture.repair.request_repair(fixture.target)
+	fixture.repair.receive_nutrition(task_id, "tiny-time-funding", 2)
+	fixture.repair.advance(0.2)
+	var before: Dictionary = fixture.repair.get_task_snapshot()
+	fixture.repair.advance(0.000000000000000001)
+	var after: Dictionary = fixture.repair.get_task_snapshot()
+	_check(after["paid_heal_remaining"] == before["paid_heal_remaining"]
+		and after["consumed_nutrition"] == before["consumed_nutrition"]
+		and after["buffered_nutrition"] == before["buffered_nutrition"],
+		"A time step below health precision preserves useful paid credit and unspent funding")
+	_close(fixture.target.health, 17.0, "Unrepresentable time steps grant no health")
+	fixture.repair.advance(2.0)
+	_check(fixture.target.health == 35.0 and fixture.repair.get_task_snapshot()["consumed_nutrition"] == 2,
+		"The next normal step uses preserved credit without an extra paid unit")
+	_destroy(fixture)
 
 
 func _test_pause_resume_and_delivery_ids() -> void:

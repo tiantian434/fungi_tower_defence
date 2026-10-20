@@ -13,7 +13,12 @@ func _initialize() -> void:
 		if node is GameAudio:
 			node.preferences_path = "user://release_guidance_audio_test.cfg"
 			node.effects_volume = 0.0
-			node.music_volume = 0.0)
+			node.music_volume = 0.0
+		elif node is GameDisplayManager:
+			node.preferences_path = "res://.artifact_work/release-guidance-display.cfg")
+	var display := root.get_node_or_null("GameDisplay") as GameDisplayManager
+	if display != null:
+		display.preferences_path = "res://.artifact_work/release-guidance-display.cfg"
 	for argument: String in OS.get_cmdline_user_args():
 		if argument.begins_with("--capture-dir="):
 			capture_dir = argument.trim_prefix("--capture-dir=")
@@ -40,10 +45,18 @@ func _run() -> void:
 	await _frames(2)
 	_check(not guide.get_snapshot().visible, "visible dismiss button works during pause")
 	level.pause_controller.set_paused(false)
+	guide.reset()
+	guide.record_event(&"opening")
 	_check(level.growth_input_controller.enter_placement_mode(), "real growth planning starts")
-	_check(level.growth_input_controller.place_target(Vector2(330, 395)), "real paid target is accepted")
 	await _frames(2)
+	_check(not card.is_visible_in_tree(), "construction preview clears the teaching card from the map")
+	var planning_lifetime: float = guide.get_snapshot().remaining
+	await _frames(60)
+	_check(is_equal_approx(guide.get_snapshot().remaining, planning_lifetime), "construction preview preserves guide reading time")
+	_check(level.growth_input_controller.place_target(Vector2(330, 395)), "real paid target is accepted")
+	await _frames(3)
 	_check(guide.get_snapshot().current_event == &"target_placed", "placing a real target teaches transport")
+	_check(card.is_visible_in_tree(), "accepting the target exits preview and restores its actionable context")
 	var highest_visible_gain: int = 0
 	var expected_return: int = level.get_node("World/Remains/FirstCarcass").total_nutrition
 	for frame: int in range(9000):
@@ -113,6 +126,18 @@ func _test_event_context() -> void:
 	guide.set_enabled(true)
 	_check(not guide.get_snapshot().visible, "disabled teaching does not queue historical notices")
 	guide.free()
+	var busy_guide := SecondLevelGuide.new()
+	root.add_child(busy_guide)
+	busy_guide.record_event(&"stage_unlocked", {"stage_name": "铺展"})
+	for event_id: StringName in [&"armored", &"swarm", &"silk_gnawer", &"junction_gnawer"]:
+		busy_guide.record_event(event_id)
+	busy_guide.record_event(&"network_broken")
+	busy_guide.record_event(&"stage_unlocked", {"stage_name": "成形"})
+	busy_guide.dismiss_current()
+	_check(busy_guide.get_snapshot().text.contains("两条花径"), "busy enemy burst cannot discard the earlier ability lesson")
+	busy_guide.dismiss_current()
+	_check(busy_guide.get_snapshot().text.contains("炮台改装"), "both stage lessons survive a full danger queue in chronological order")
+	busy_guide.free()
 
 
 func _capture(filename: String) -> void:

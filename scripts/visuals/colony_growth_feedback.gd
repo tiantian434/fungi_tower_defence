@@ -42,6 +42,10 @@ func _on_energy_returned(_product_id: String, amount: int) -> void:
 	if _return_pulse <= 0.0:
 		_return_pulse = 0.75
 	gain_label.text = "+ %d 创作能量" % _gain_total
+	# 回流事件当帧就定位；玩家立刻暂停时也能看到收益来自小画家。
+	if is_instance_valid(_core):
+		gain_label.position = to_local(_core.global_position) + Vector2(-150, -174)
+	gain_label.modulate.a = 1.0
 	gain_label.show()
 	set_process(true)
 

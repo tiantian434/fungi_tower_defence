@@ -1,7 +1,7 @@
 [gd_scene format=3]
 
 [ext_resource type="Script" path="res://scripts/basic_enemy.gd" id="1_enemy"]
-[ext_resource type="Texture2D" path="res://assets/Dark World - Free Asset Pack - v1.0/Character/character_sheet.png" id="2_sheet"]
+[ext_resource type="Texture2D" path="res://assets/gameplay/fallback_enemy_sheet.png" id="2_sheet"]
 [ext_resource type="Script" path="res://scripts/visuals/enemy_art_view.gd" id="3_art_view"]
 [ext_resource type="Texture2D" path="res://resources/art/textures/camera_idle.tres" id="4_art_preview"]
 

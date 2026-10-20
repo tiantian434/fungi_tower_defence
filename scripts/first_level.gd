@@ -102,9 +102,11 @@ func _input(event: InputEvent) -> void:
 		return
 	if event is InputEventKey and not event.is_echo():
 		for action: StringName in DEVELOPMENT_SCENES:
-			if event.is_action_pressed(action) and can_open_development_demos():
+			if event.is_action_pressed(action):
 				get_viewport().set_input_as_handled()
-				open_development_demo(action)
+				# 正式局也必须截住这些按键，不能继续交给旧教学父类的场景切换。
+				if can_open_development_demos():
+					open_development_demo(action)
 				return
 		if event.is_pressed() and event.keycode == KEY_ESCAPE:
 			compact_hud.close_drawer()

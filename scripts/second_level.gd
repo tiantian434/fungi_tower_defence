@@ -58,6 +58,7 @@ func _ready() -> void:
 	_second_ready = true
 	initialize_level_camera(compact_hud, _camera_input_allowed)
 	_refresh_second_hud()
+	first_guide.record_event(&"opening")
 	hud.show_notice("第二关：%d秒后AI绘图终端开始生成敌人。接通两侧数位板，建造前沿炮台；点击终端可设为优先目标。" % ceili(wave_flow.profile.preparation_seconds))
 
 

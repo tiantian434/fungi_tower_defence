@@ -4,6 +4,8 @@
 
 图片中的透明留白通过AtlasTexture资源裁切，未修改原图像素；碎纸机动画与菌结状态使用统一裁切范围。
 
+发布包另保留 `fallback_enemy_sheet.png`，原样复制自工程已有的 `assets/Dark World - Free Asset Pack - v1.0/Character/character_sheet.png`。它属于早期免费素材包，是基础敌人场景的兼容动画依赖；正式三章由章节手绘美术覆盖显示。独立复制使发布时可以排除原始整包而不丢失场景依赖，其来源与上方用户交付的44张美术分开记录。
+
 | 原始文件 | 工程文件 | 对应纹理资源 |
 | --- | --- | --- |
 | 第一章素材/常态菌结.png | assets/gameplay/chapter_1/node_idle.png | resources/art/textures/node_idle.tres |

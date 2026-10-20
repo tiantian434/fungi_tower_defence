@@ -14,6 +14,10 @@ var failures: Array[String] = []
 var _active_level: SecondLevel
 var _next_maintenance: float = 0.0
 var _built_points: Array[Vector2] = []
+var _support_points: Array[Vector2] = []
+var _firing_points: Array[Vector2] = []
+var _actions: Dictionary = {}
+var _completed_routes: int = 0
 
 
 func _initialize() -> void:
@@ -32,6 +36,8 @@ func _initialize() -> void:
 func _run() -> void:
 	await _play([&"left", &"center", &"right"])
 	await _play([&"right", &"center", &"left"])
+	if _completed_routes != 2:
+		failures.append("both routes must finish their result and resource checks")
 	print("SECOND_LEVEL_PLAYTHROUGH_RESULT ", JSON.stringify({"failures": failures}))
 	quit(0 if failures.is_empty() else 1)
 
@@ -54,18 +60,35 @@ func _play(order: Array[StringName]) -> void:
 	_active_level = level
 	_next_maintenance = 0.5
 	_built_points.clear()
+	_support_points.clear()
+	_firing_points.clear()
+	_actions = {"remote_builds": 0, "local_builds": 0, "frontline_rebuilds": 0,
+		"repairs": 0, "specializations": 0}
 	await _frames(4)
 	print("SECOND_LEVEL_ROUTE_START ", order)
 	for id: StringName in order:
 		if not level.get_result_snapshot().is_empty(): break
 		level.choose_organ(&"attack")
 		# 自动选敌优先保护前沿，空闲射击设施；优先目标按钮由独立功能测试覆盖。
+		# 喷壶改装会缩短射程至145px；支援点必须仍能保护前方花朵，不能沿用普通铅笔的178px距离。
 		var support: Vector2 = Vector2(355, 535) if id == &"left" else (
-			Vector2(820, 535) if id == &"right" else (Vector2(445, 355) if order[0] == &"left" else Vector2(790, 385)))
+			Vector2(850, 510) if id == &"right" else (Vector2(445, 355) if order[0] == &"left" else Vector2(775, 385)))
 		var firing_point: Vector2 = POINTS[id] if id != &"center" else (
 			Vector2(550, 340) if order[0] == &"left" else Vector2(650, 340))
-		if not await _build(level, support) or not await _build(level, firing_point):
+		_support_points.append(support)
+		_firing_points.append(firing_point)
+		if not await _build(level, support):
 			failures.append("route %s could not build protected route to %s" % [order, id])
+			break
+		# 后拆右终端时，该方向已积累数轮羊群；再推进一个支援点，清空前沿再培育火力点。
+		if id == &"right" and level.elapsed_seconds >= level.wave_flow.profile.advanced_after_seconds:
+			var forward_guard := Vector2(885, 460)
+			_support_points.append(forward_guard)
+			if not await _build(level, forward_guard):
+				failures.append("route %s could not reinforce the late right push" % [order])
+				break
+		if not await _build(level, firing_point):
+			failures.append("route %s could not build firing point at %s" % [order, id])
 			break
 		var destroyed: bool = false
 		var wait_started: float = level.elapsed_seconds
@@ -95,8 +118,9 @@ func _play(order: Array[StringName]) -> void:
 		failures.append("route %s did not win" % [order])
 	if not bool(ledger.get("balanced", false)):
 		failures.append("route %s resource ledger diverged" % [order])
-	print("SECOND_LEVEL_ROUTE_RESULT ", JSON.stringify({"order": order, "result": result,
+	print("SECOND_LEVEL_ROUTE_RESULT ", JSON.stringify({"order": order, "result": result, "actions": _actions,
 		"production": level.wave_flow.get_snapshot(), "ledger": ledger}))
+	_completed_routes += 1
 	_active_level = null
 	level.queue_free()
 	await _frames(4)
@@ -111,12 +135,14 @@ func _build(level: SecondLevel, point: Vector2, retry: int = 0) -> bool:
 	if host != null:
 		controller.select_node(host)
 		if not controller.request_cultivation(): return false
+		_actions.local_builds += 1
 	else:
 		controller.enter_remote_placement_mode()
 		var preview: Dictionary = controller.preview_remote_at(point)
 		print("SECOND_LEVEL_BUILD ", point, " valid=", preview.get("valid"), " cost=", preview.get("total_cost"),
 			" reason=", preview.get("error"), " capital=", level.mother_core.nutrition)
 		if not controller.place_remote_target(point): return false
+		_actions.remote_builds += 1
 	var construction_id: String = String(level.construction_coordinator.get_snapshot().get("selected_id", ""))
 	var build_started: float = level.elapsed_seconds
 	for frame: int in range(3600):
@@ -128,7 +154,8 @@ func _build(level: SecondLevel, point: Vector2, retry: int = 0) -> bool:
 			return true
 		var request: Dictionary = level.construction_coordinator.get_request(construction_id)
 		if request.get("state") in [&"failed", &"cancelled"]:
-			print("SECOND_LEVEL_REBUILD ", point, " reason=", request.get("wait_reason"))
+			print("SECOND_LEVEL_REBUILD ", point, " time=", level.elapsed_seconds,
+				" state=", request.get("state"), " reason=", request.get("wait_reason"))
 			return await _build(level, point, retry + 1) if retry < 4 else false
 		await _frames(1)
 	print("SECOND_LEVEL_BUILD_TIMEOUT ", point, " queue=", level.construction_coordinator.get_snapshot())
@@ -158,7 +185,8 @@ func _rebuild_lost_frontline() -> void:
 		controller.select_node(host)
 		var status: Dictionary = controller.get_selection_status()
 		if status.get("can_cultivate", false) or status.get("can_continue", false):
-			controller.request_cultivation()
+			if controller.request_cultivation():
+				_actions.frontline_rebuilds += 1
 			return
 
 
@@ -182,7 +210,8 @@ func _maintain_network() -> void:
 			ratio = health_ratio
 			chosen = tissue as Node2D
 	if chosen != null:
-		_active_level.repair_system.request_repair(chosen)
+		if _active_level.repair_system.request_repair(chosen) > 0:
+			_actions.repairs += 1
 
 
 func _specialize_support() -> void:
@@ -194,10 +223,14 @@ func _specialize_support() -> void:
 			continue
 		var point: Vector2 = weapon.get_parent().global_position
 		var supporting: bool = false
-		for support: Vector2 in [Vector2(355, 535), Vector2(820, 535), Vector2(445, 355), Vector2(790, 385)]:
-			if point.distance_to(support) < 2.0: supporting = true
-		if supporting:
+		for support: Vector2 in _support_points:
+			if point.distance_to(support) <= CultivationInputController.OVERLAP_RADIUS: supporting = true
+		var facing_armor: bool = _active_level.elapsed_seconds >= _active_level.wave_flow.profile.full_after_seconds \
+			and _firing_points.any(func(front: Vector2) -> bool:
+				return point.distance_to(front) <= CultivationInputController.OVERLAP_RADIUS)
+		if supporting or facing_armor:
 			var input: DifferentiationInputController = _active_level.differentiation_input_controller
 			input.select_node(weapon.get_parent() as HyphaNode)
-			input.request_start(WeaponProfile.DamageType.SCATTER)
+			if input.request_start(WeaponProfile.DamageType.SCATTER if supporting else WeaponProfile.DamageType.ARMOR_PIERCING):
+				_actions.specializations += 1
 			return

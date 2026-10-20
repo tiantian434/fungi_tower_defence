@@ -67,7 +67,8 @@ func _process(delta: float) -> void:
 		_panel.hide()
 		return
 	var hud: CompactColonyHUD = _level.compact_hud
-	var blocked: bool = get_tree().paused or hud.drawer.visible or hud._mode_panel.visible
+	var blocked: bool = get_tree().paused or hud.drawer.visible or hud._mode_panel.visible \
+		or hud._guide_card.is_visible_in_tree()
 	_panel.visible = not blocked and (_remaining > 0 or not _pending.is_empty())
 	if not _panel.visible:
 		return

@@ -37,11 +37,18 @@ func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_audio = GameAudio.find_for(self)
 	if _audio == null:
-		_audio = preload("res://scenes/audio/game_audio.tscn").instantiate() as GameAudio
-		add_child(_audio)
-	_audio.observe_ui(self)
-	if not sequence.music_id.is_empty():
-		_audio.play_music(sequence.music_id)
+		# 音频反馈脚本会引用关卡类型；运行时加载可避免经 StoryPlayer 回到音频场景的预加载环。
+		var audio_scene := load("res://scenes/audio/game_audio.tscn") as PackedScene
+		if audio_scene != null and audio_scene.can_instantiate():
+			_audio = audio_scene.instantiate() as GameAudio
+		if is_instance_valid(_audio):
+			add_child(_audio)
+		else:
+			push_error("剧情音频场景无法加载，保留剧情操作以便继续游戏。")
+	if is_instance_valid(_audio):
+		_audio.observe_ui(self)
+		if not sequence.music_id.is_empty():
+			_audio.play_music(sequence.music_id)
 	layer = 100
 	var backdrop := ColorRect.new()
 	backdrop.color = Color("e7dfd2")
@@ -168,7 +175,7 @@ func _input(event: InputEvent) -> void:
 
 func _toggle_play() -> void:
 	playing = not playing
-	if not sequence.music_id.is_empty():
+	if is_instance_valid(_audio) and not sequence.music_id.is_empty():
 		_audio.pause_music(not playing)
 	_play.text = "等待继续" if frame_index >= sequence.get_count() - 1 else ("暂停播放" if playing else "自动播放")
 
@@ -228,7 +235,8 @@ func _refresh() -> void:
 	_play.tooltip_text = "P 暂停或自动播放"
 	if _last_audio_frame != frame_index:
 		_last_audio_frame = frame_index
-		_audio.play(&"paper")
+		if is_instance_valid(_audio):
+			_audio.play(&"paper")
 
 
 func _update_transition() -> void:

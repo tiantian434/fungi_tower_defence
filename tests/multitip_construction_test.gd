@@ -46,10 +46,11 @@ func _initialize() -> void:
 
 
 func _run() -> void:
+	var initial_root_children: int = root.get_child_count()
 	root.size = Vector2i(1200, 800)
 	root.physics_object_picking = true
 	await _test_formal_multitip_cycle()
-	_check(root.get_child_count() == 0, "All formal scenes and physical workers are disposed")
+	_check(root.get_child_count() == initial_root_children, "All formal scenes and physical workers are disposed")
 	print("MULTITIP_CONSTRUCTION_TEST_RESULT ", JSON.stringify({
 		"checks": checks, "failures": failures, "conservation_checks": conservation_checks,
 		"cases": cases, "evidence": "formal_scene_original_modules_and_physical_packets",

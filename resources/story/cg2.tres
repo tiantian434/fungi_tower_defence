@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="StorySequence" load_steps=24 format=3]
+[gd_resource type="Resource" script_class="StorySequence" load_steps=22 format=3]
 
 [ext_resource type="Script" path="res://scripts/story_sequence.gd" id="sequence"]
 [ext_resource type="Script" path="res://scripts/story_shot.gd" id="shot"]
@@ -18,18 +18,8 @@ title = "没有辜负小时候的自己"
 layers = Array[Texture2D]([ExtResource("tex0")])
 scene_id = &"admission"
 grain = 0.012
-caption = "虽然很艰难，但我一直没有放弃画画，直到成年。"
-seconds = 4.5
-
-[sub_resource type="Resource" id="Shot_01"]
-script = ExtResource("shot")
-title = "没有辜负小时候的自己"
-layers = Array[Texture2D]([ExtResource("tex0")])
-scene_id = &"admission"
-grain = 0.012
-caption = "高考后，我如愿考上了一所优秀的美术学院。"
-seconds = 4.5
-animation_offset = 6.0
+caption = "虽然很艰难，但我没有放弃画画，后来如愿考上了美术学院。"
+seconds = 6.0
 
 [sub_resource type="Resource" id="Shot_02"]
 script = ExtResource("shot")
@@ -41,16 +31,6 @@ caption = "望着那时候我稚拙的画，我想，我应该没有辜负小时
 seconds = 6.0
 animation_offset = 11.5
 
-[sub_resource type="Resource" id="Shot_03"]
-script = ExtResource("shot")
-framing = Rect2(380, 60, 660, 470)
-grain = 0.012
-scene_id = &"comic_post"
-transition_seconds = 0.65
-flipbook = Array[Texture2D]([ExtResource("tex1"), ExtResource("tex2")])
-caption = "人生是跌跌撞撞的旅程，不同的时候会有不同的烦恼。"
-seconds = 5.0
-
 [sub_resource type="Resource" id="Shot_04"]
 script = ExtResource("shot")
 framing = Rect2(380, 60, 660, 470)
@@ -58,8 +38,8 @@ grain = 0.012
 scene_id = &"comic_post"
 transition_seconds = 0.65
 flipbook = Array[Texture2D]([ExtResource("tex1"), ExtResource("tex2")])
-caption = "上大学后，我以为我可以心无旁骛地画画，可却出现了一个名为 AI 的怪物。"
-seconds = 7.0
+caption = "上大学后，我以为能心无旁骛地画画。可 AI 让世界忽然变快了。"
+seconds = 6.0
 animation_offset = 6.5
 
 [sub_resource type="Resource" id="Shot_05"]
@@ -69,7 +49,7 @@ grain = 0.012
 scene_id = &"comic_post"
 transition_seconds = 0.65
 flipbook = Array[Texture2D]([ExtResource("tex1"), ExtResource("tex2")])
-caption = "AI 的绘画技术越来越成熟，已经远远超过了我。"
+caption = "我开始拿自己的每一笔，和机器的速度比较。"
 seconds = 4.5
 animation_offset = 14.5
 
@@ -137,8 +117,8 @@ unsettled = true
 grain = 0.03
 remarks = PackedStringArray("“画的啥啊，不如ai”")
 scene_id = &"phone_dark"
-caption = "为什么我的努力成了徒劳？为什么我总是不幸？要是 AI 消失了多好……"
-seconds = 7.0
+caption = "那些声音说，我的热爱一文不值。要是这些评价能安静下来就好了……"
+seconds = 6.0
 animation_offset = 13.0
 
 [resource]
@@ -146,4 +126,4 @@ script = ExtResource("sequence")
 music_id = &"chapter_2"
 title = "AI冲击"
 caption = "人生是跌跌撞撞的旅程，不同的时候会有不同的烦恼。"
-shots = Array[ExtResource("shot")]([SubResource("Shot_00"), SubResource("Shot_01"), SubResource("Shot_02"), SubResource("Shot_03"), SubResource("Shot_04"), SubResource("Shot_05"), SubResource("Shot_06"), SubResource("Shot_07"), SubResource("Shot_08"), SubResource("Shot_09"), SubResource("Shot_10"), SubResource("Shot_11")])
+shots = Array[ExtResource("shot")]([SubResource("Shot_00"), SubResource("Shot_02"), SubResource("Shot_04"), SubResource("Shot_05"), SubResource("Shot_06"), SubResource("Shot_07"), SubResource("Shot_08"), SubResource("Shot_09"), SubResource("Shot_10"), SubResource("Shot_11")])

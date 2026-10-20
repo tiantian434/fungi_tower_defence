@@ -603,7 +603,8 @@ func _refresh_guide() -> void:
 	_guide_toggle.set_pressed_no_signal(bool(guide.get("enabled", true)))
 	_guide_label.text = String(guide.get("text", "")) if bool(guide.get("visible", false)) else "新的操作提示会在这里保留。"
 	_guide_dismiss.disabled = not bool(guide.get("visible", false))
-	var obstructed: bool = drawer.visible or level_menu.is_open()
+	# 放置和运营预览需要完整观察地图；教学在退出预览后恢复，并保留阅读时间。
+	var obstructed: bool = drawer.visible or level_menu.is_open() or _mode_panel.visible
 	_level.first_guide.set_presentation_paused(obstructed)
 	var was_visible: bool = _guide_card.visible
 	_guide_card.show_snapshot(guide)
@@ -788,9 +789,12 @@ func _layout() -> void:
 	_layout_mode_hint()
 	var under_header: float = maxf(128, maxf(top_left.get_global_rect().end.y,
 		top_right.get_global_rect().end.y) + 12)
-	_guide_card.position = Vector2(24, under_header)
-	_guide_card.size = Vector2(minf(560, viewport_size.x - 48), 0)
-	_toast.position = Vector2(24, _guide_card.get_global_rect().end.y + 10 if _guide_card.visible else under_header)
+	# 三章的资源与记忆集中在上方和两侧；教学收在左下留白，避免盖住正要寻找的目标。
+	_guide_card.size = Vector2(minf(500, viewport_size.x - 48), 0)
+	_guide_card.position = Vector2(24, dock.position.y - _guide_card.size.y - 16)
+	if _guide_card.visible:
+		selection_button.position.y = _guide_card.position.y - selection_button.size.y - 12
+	_toast.position = Vector2(24, under_header)
 	_toast.size = Vector2(minf(660, drawer.position.x - 40 if drawer.visible else viewport_size.x - 48), 48)
 
 

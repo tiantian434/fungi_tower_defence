@@ -150,7 +150,7 @@ func _is_clean() -> bool:
 		and level.get_digestive_organs().size() == 1 and level.enemy_spawner.spawned_count == 0 \
 		and level.get_node("World/Enemies").get_child_count() == 0 \
 		and level.construction_coordinator.get_workers().is_empty() \
-		and level.first_guide.get_snapshot().seen.is_empty() and level.get_result_snapshot().is_empty() \
+		and level.first_guide.get_snapshot().seen == [&"opening"] and level.get_result_snapshot().is_empty() \
 		and ledger.balanced and ledger.parts.decayed_remains == 0 and ledger.parts.transplant_lost == 0
 
 func _simulation_snapshot() -> Dictionary:
