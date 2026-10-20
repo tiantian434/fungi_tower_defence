@@ -69,16 +69,16 @@ func _run() -> void:
 	var audio: GameAudio = GameAudio.find_for(level)
 	var music: GameMusic = audio.get_node("Music")
 	var audio_ref: WeakRef = weakref(audio)
-	var playback_ref: WeakRef = weakref(music._current.player.get_stream_playback())
+	var playback_ref: WeakRef = _music_playback_reference(music)
 	level.queue_free()
 	await _frames(3)
 	_check(audio_ref.get_ref() == null, "fixture disposal frees its scene-owned audio service")
 	# MP3 解码器由混音线程异步释放；等待实际释放，避免把测试进程退出误报为关卡泄漏。
-	for frame: int in range(30):
-		if playback_ref.get_ref() == null:
+	for frame: int in range(120):
+		if _reference_is_released(playback_ref):
 			break
 		await _frames(1)
-	_check(playback_ref.get_ref() == null, "fixture disposal releases the battle MP3 playback before test exit")
+	_check(_reference_is_released(playback_ref), "fixture disposal releases the battle MP3 playback before test exit")
 	print("RELEASE_GUIDANCE_RESULT ", JSON.stringify({"checks": checks, "failures": failures}))
 	quit(0 if failures.is_empty() else 1)
 
@@ -88,6 +88,17 @@ func _labels_contain(node: Node, snippet: String) -> bool:
 		if label.text.contains(snippet):
 			return true
 	return false
+
+
+func _music_playback_reference(music: GameMusic) -> WeakRef:
+	# 单独的调用栈立即释放 get_stream_playback() 的临时强引用；协程只保留弱引用。
+	var playback: AudioStreamPlayback = music._current.player.get_stream_playback()
+	return weakref(playback) as WeakRef
+
+
+func _reference_is_released(reference: WeakRef) -> bool:
+	# 在这个短调用结束后释放观察用的临时引用，不跨 await 持有正在检查的对象。
+	return reference.get_ref() == null
 
 
 func _frames(count: int) -> void:

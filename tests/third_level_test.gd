@@ -7,6 +7,15 @@ var failures: Array[String] = []
 
 
 func _initialize() -> void:
+	node_added.connect(func(node: Node) -> void:
+		if node is GameAudio:
+			node.preferences_path = "res://.artifact_work/third_level_test-audio.cfg"
+			node.effects_volume = 0.0
+			node.music_volume = 0.0
+		elif node is GameDisplayManager:
+			node.preferences_path = "res://.artifact_work/third_level_test-display.cfg"
+		elif node is CampaignNavigator:
+			node.progress_store = CampaignProgressStore.new("res://.artifact_work/third_level_test-progress.cfg"))
 	_run.call_deferred()
 
 
