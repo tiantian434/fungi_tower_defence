@@ -129,6 +129,14 @@ total_nutrition = 80
 position = Vector2(920, 630)
 total_nutrition = 120
 
+[node name="StockLabel" parent="World/Remains/FarCarcass" index="4"]
+offset_left = -260.0
+offset_right = -40.0
+
+[node name="StatusLabel" parent="World/Remains/FarCarcass" index="5"]
+offset_left = -260.0
+offset_right = -40.0
+
 [node name="Fragments" type="Node2D" parent="World"]
 
 [node name="FirstCreation" parent="World/Fragments" instance=ExtResource("18_memory")]
