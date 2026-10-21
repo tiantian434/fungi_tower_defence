@@ -47,7 +47,10 @@ func _ready() -> void:
 	var override_path: String = OS.get_environment("FUNGI_DISPLAY_PREFERENCES")
 	if not override_path.is_empty():
 		preferences_path = override_path
-	if not _headless:
+	if _is_web():
+		# 浏览器尺寸由导出画布策略管理；全屏只能由当前用户输入请求。
+		_sync_web_fullscreen()
+	elif not _headless:
 		_restore_window()
 	_window.size_changed.connect(_on_window_changed)
 	_window.close_requested.connect(save_preferences)
@@ -61,14 +64,21 @@ func configure_canvas(dimensions: Vector2i = GAMEPLAY_CANVAS) -> void:
 
 
 func is_fullscreen() -> bool:
+	if _is_web():
+		return _web_window_mode() in [DisplayServer.WINDOW_MODE_FULLSCREEN, DisplayServer.WINDOW_MODE_EXCLUSIVE_FULLSCREEN]
 	return _fullscreen
 
 
 func toggle_fullscreen() -> void:
-	set_fullscreen(not _fullscreen)
+	set_fullscreen(not is_fullscreen())
 
 
 func set_fullscreen(enabled: bool) -> void:
+	if _is_web():
+		if enabled != is_fullscreen():
+			_request_web_window_mode(DisplayServer.WINDOW_MODE_FULLSCREEN if enabled else DisplayServer.WINDOW_MODE_WINDOWED)
+		_sync_web_fullscreen()
+		return
 	if enabled == _fullscreen:
 		return
 	if not _headless and enabled:
@@ -99,6 +109,10 @@ func _exit_tree() -> void:
 
 
 func _process(delta: float) -> void:
+	if _is_web():
+		# Esc 或浏览器自己的控件也能退出全屏，不依赖一次 resize 通知。
+		_sync_web_fullscreen()
+		return
 	if _transition_frames > 0:
 		_transition_frames -= 1
 	_monitor_remaining -= delta
@@ -164,6 +178,9 @@ func _capture_windowed_geometry() -> void:
 
 
 func _on_window_changed() -> void:
+	if _is_web():
+		_sync_web_fullscreen()
+		return
 	if not _headless and _transition_frames == 0:
 		_capture_windowed_geometry()
 	_save_remaining = SAVE_DELAY
@@ -189,7 +206,7 @@ func _check_monitor() -> void:
 
 func save_preferences() -> void:
 	_save_remaining = -1.0
-	if _headless:
+	if _headless or _is_web():
 		return
 	if _transition_frames == 0 and not _fullscreen:
 		_capture_windowed_geometry()
@@ -202,3 +219,23 @@ func save_preferences() -> void:
 	var error: Error = config.save(preferences_path)
 	if error != OK:
 		push_warning("显示设置暂时无法保存：%s" % error_string(error))
+
+
+func _is_web() -> bool:
+	return OS.has_feature("web")
+
+
+func _web_window_mode() -> DisplayServer.WindowMode:
+	return DisplayServer.window_get_mode()
+
+
+func _request_web_window_mode(mode: DisplayServer.WindowMode) -> void:
+	# 直接在按钮或按键回调中调用，保留浏览器要求的用户手势。
+	DisplayServer.window_set_mode(mode)
+
+
+func _sync_web_fullscreen() -> void:
+	var actual: bool = is_fullscreen()
+	if actual != _fullscreen:
+		_fullscreen = actual
+		display_changed.emit()

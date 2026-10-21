@@ -16,6 +16,7 @@ func _ready() -> void:
 	ArtUI.menu_button(start_button, "开始游戏")
 	ArtUI.menu_button(continue_button, "继续游戏")
 	ArtUI.menu_button(quit_button, "退出游戏")
+	quit_button.visible = not _is_web()
 	for button: Button in [start_button, continue_button, quit_button]:
 		button.tooltip_text = ""
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -33,14 +34,15 @@ func _prepare_menu() -> void:
 	_navigator.progress_store.load_progress()
 	start_button.pressed.connect(_on_start)
 	continue_button.pressed.connect(_on_continue)
-	quit_button.pressed.connect(_navigator.request_quit)
+	if not _is_web():
+		quit_button.pressed.connect(_navigator.request_quit)
 	reset_dialog.confirmed.connect(_start_new)
 	reset_dialog.title = "开始新游戏"
 	reset_dialog.dialog_text = "开始新游戏将重置已解锁的关卡进度。是否继续？"
 	reset_dialog.ok_button_text = "开始新游戏"
 	reset_dialog.cancel_button_text = "返回"
 	start_button.disabled = false
-	quit_button.disabled = false
+	quit_button.disabled = _is_web()
 	refresh_progress()
 	start_button.grab_focus()
 
@@ -83,3 +85,7 @@ func _lock_buttons() -> void:
 	start_button.disabled = true
 	continue_button.disabled = true
 	quit_button.disabled = true
+
+
+func _is_web() -> bool:
+	return OS.has_feature("web")

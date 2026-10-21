@@ -3,6 +3,7 @@ extends Node2D
 ## 只读战场标记：生命、失联、敌人目标和预览中的未保护路段。
 
 @export var compact_labels: bool = false
+@export var show_enemy_intents: bool = true
 @export var exposure_label_position: Vector2 = Vector2(405, 245)
 var exposure_in_hud: bool = false
 
@@ -99,6 +100,12 @@ func _draw() -> void:
 		if caption == "失联" or caption == "枯萎花朵":
 			color = Color("9a683d")
 		draw_string(_font, to_local(point), "%s %.0f/%.0f" % [caption, hp, maximum], HORIZONTAL_ALIGNMENT_LEFT, -1.0, 11, color)
+	if show_enemy_intents:
+		_draw_enemy_intents()
+	_draw_exposure()
+
+
+func _draw_enemy_intents() -> void:
 	for enemy: Node in level.get_node("World/Enemies").get_children():
 		if not enemy is BasicEnemy or not enemy.is_alive():
 			continue
@@ -108,7 +115,6 @@ func _draw() -> void:
 		var point: Vector2 = target.get("position", enemy.global_position)
 		draw_dashed_line(to_local(enemy.global_position), to_local(point), Color(0.95, 0.35, 0.24, 0.75), 1.0, 5.0)
 		draw_arc(to_local(point), 17.0, 0.0, TAU, 24, Color("ed795d"), 2.0, true)
-	_draw_exposure()
 
 
 func _draw_exposure() -> void:
