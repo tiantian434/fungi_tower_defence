@@ -5,6 +5,7 @@ extends Node2D
 const RETURN_SECONDS: float = 1.8
 const STAGE_SECONDS: float = 2.8
 const MAX_PULSE_NODES: int = 64
+const GAIN_OFFSET := Vector2(38, -42)
 
 @onready var gain_label: Label = $EnergyGain
 
@@ -44,7 +45,7 @@ func _on_energy_returned(_product_id: String, amount: int) -> void:
 	gain_label.text = "+ %d 创作能量" % _gain_total
 	# 回流事件当帧就定位；玩家立刻暂停时也能看到收益来自小画家。
 	if is_instance_valid(_core):
-		gain_label.position = to_local(_core.global_position) + Vector2(-150, -174)
+		gain_label.position = to_local(_core.global_position) + GAIN_OFFSET
 	gain_label.modulate.a = 1.0
 	gain_label.show()
 	set_process(true)
@@ -65,7 +66,8 @@ func _process(delta: float) -> void:
 	_return_pulse = maxf(0.0, _return_pulse - delta)
 	_stage_remaining = maxf(0.0, _stage_remaining - delta)
 	if is_instance_valid(_core):
-		gain_label.position = to_local(_core.global_position) + Vector2(-150, -174 - (RETURN_SECONDS - _return_remaining) * 12.0)
+		gain_label.position = to_local(_core.global_position) + GAIN_OFFSET \
+			+ Vector2(0, -(RETURN_SECONDS - _return_remaining) * 12.0)
 	gain_label.modulate.a = clampf(_return_remaining / 0.45, 0.0, 1.0)
 	gain_label.visible = _return_remaining > 0.0
 	queue_redraw()

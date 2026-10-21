@@ -88,4 +88,4 @@ spawn_point_index = 1
 script = ExtResource("1_wave")
 entries = Array[ExtResource("2_entry")]([SubResource("Entry_01"), SubResource("Entry_02"), SubResource("Entry_03"), SubResource("Entry_04"), SubResource("Entry_05"), SubResource("Entry_06"), SubResource("Entry_07"), SubResource("Entry_08"), SubResource("Entry_09")])
 title = "第三波 · 画下自己的防线"
-direction_text = "重甲与羊群交错来袭。橡皮破甲，喷壶散射；守住这片花海。"
+direction_text = "重甲与羊群交错来袭。橡皮破甲，喷漆散射；守住这片花海。"

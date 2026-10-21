@@ -942,11 +942,12 @@ func _play_gain_feedback(nutrition: int) -> void:
 		return
 	if _gain_tween != null and _gain_tween.is_valid():
 		_gain_tween.kill()
-	gain_label.text = "产出 %d 创作能量" % nutrition
-	gain_feedback.position = Vector2(0, -66)
+	gain_label.text = "加工完成 · %d" % nutrition
+	# 加工提示放在设备下方，避免盖住前方的小画家；实际入账由母核回流反馈显示。
+	gain_feedback.position = Vector2(0, 112)
 	gain_feedback.modulate.a = 1.0
 	gain_feedback.show()
 	_gain_tween = create_tween().set_parallel(true)
-	_gain_tween.tween_property(gain_feedback, "position:y", -88.0, 0.8)
+	_gain_tween.tween_property(gain_feedback, "position:y", 90.0, 0.8)
 	_gain_tween.tween_property(gain_feedback, "modulate:a", 0.0, 0.8)
 	_gain_tween.chain().tween_callback(gain_feedback.hide)

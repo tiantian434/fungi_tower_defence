@@ -349,6 +349,7 @@ func _build_pages() -> void:
 	var map_toggle := CheckButton.new()
 	map_toggle.name = "MapDetails"
 	map_toggle.text = "地图详细标注"
+	map_toggle.tooltip_text = "显示敌人目标线，以及加工、运输和资源详情。"
 	map_toggle.focus_mode = Control.FOCUS_NONE
 	map_toggle.toggled.connect(func(enabled: bool) -> void: _map_details_enabled = enabled)
 	page.add_child(map_toggle)
@@ -534,6 +535,7 @@ func _refresh_selection() -> void:
 
 
 func _refresh_map_labels() -> void:
+	_level.frontier_status.show_enemy_intents = _map_details_enabled
 	for organ: DigestiveOrgan in _level.get_digestive_organs():
 		for path: String in ["QueueLabel", "ChamberStatus", "SecondChamber/StateLabel"]:
 			var label: CanvasItem = organ.get_node_or_null(path) as CanvasItem
@@ -700,6 +702,9 @@ func _on_maturing_selected(index: int) -> void:
 
 func _on_notice(message: String) -> void:
 	if message.is_empty() or not _configured or not is_inside_tree():
+		return
+	# 每个运输包都有独立的物流记录与能量反馈，不抢占战斗通知或挤满消息历史。
+	if message in ["创作能量已送达文具炮台", "创作能量已回运小画家"]:
 		return
 	if _history.is_empty() or _history[0] != message:
 		_history.insert(0, message)
