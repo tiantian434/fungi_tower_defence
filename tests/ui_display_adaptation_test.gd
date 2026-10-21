@@ -112,6 +112,15 @@ func _run() -> void:
 		display.set_fullscreen(fullscreen_before)
 		story.finish()
 		await _frames()
+	_finish.call_deferred()
+
+
+func _finish() -> void:
+	# 先结束持有 story/level 局部引用的验收协程，再等待场景和音频退场。
+	if is_instance_valid(current_scene):
+		current_scene.queue_free()
+		current_scene = null
+	await _frames(8)
 	print("UI_DISPLAY_ADAPTATION ", JSON.stringify({"checks": checks, "failures": failures}))
 	quit(0 if failures.is_empty() else 1)
 
